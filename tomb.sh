@@ -106,7 +106,7 @@ get_tasks() {
 
   # Defaults to pattern that finds every type of task
   task_pattern="${task_pattern:-\[.\]}"
-  tasks="$(sed -n "/${input_date:-$(date '+%d.%m.%Y')}/,/###/p" "${TOMB_LOCATION}" | sed '$d')"
+  tasks="$(LC_CTYPE=C sed -n "/${input_date:-$(date '+%d.%m.%Y')}/,/###/p" "${TOMB_LOCATION}" | sed '$d')"
 
   if [ "${count:-0}" -eq 1 ]; then
     printf "%b" "${tasks}" | grep -c "${task_pattern}" || exit 0

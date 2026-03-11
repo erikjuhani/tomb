@@ -13,7 +13,8 @@
 </p>
 
 > [!IMPORTANT]
-> The first iteration of `tomb` is built by composing Unix tools like `grep` and `sed`. However, the next version will be properly developed using a statically-typed programming language, [🦀](https://www.rust-lang.org/).
+> The first iteration of `tomb` (v1) is a shell script composing Unix tools like `grep` and `sed`, licensed under MIT.
+> The v2 rewrite in [Rust](https://www.rust-lang.org/) is licensed under **GPL-3.0**. See [LICENSE](LICENSE) and [CONTRIBUTING.md](CONTRIBUTING.md) for details.
 
 <!--toc:start-->
 - [Background](#background)

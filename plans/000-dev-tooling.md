@@ -66,32 +66,35 @@ changelog:
 
 ### 5a. `.github/workflows/test.yml` — CI on push/PR
 
-- [ ] Triggers: push to main, PRs (opened/synchronize/reopened), workflow_dispatch
-- [ ] Concurrency: cancel in-progress runs for same PR/ref
-- [ ] Steps: checkout, toolchain install, cargo cache, format check, cargo check, clippy, test, build + package
-- [ ] Use `--locked` and `--profile ci`
-- [ ] Pin all actions with SHA hashes (not tags)
-- [ ] Set `permissions: {}`  and `persist-credentials: false`
+- [x] Triggers: push to main, PRs (opened/synchronize/reopened), workflow_dispatch
+- [x] Concurrency: cancel in-progress runs for same PR/ref
+- [x] Steps: checkout, toolchain install, cargo cache, format check, cargo check, clippy, test, build + package
+- [x] Use `--locked` and `--profile ci`
+- [x] Pin all actions with SHA hashes (not tags)
+- [x] Set `permissions: {}`  and `persist-credentials: false`
 
 ### 5b. `.github/workflows/build.yml` — cross-platform build (reusable)
 
-- [ ] `workflow_call` trigger (called by release)
-- [ ] Matrix: linux (x86_64 gnu/musl, aarch64 gnu/musl, armv7), macOS (x86_64, aarch64), Windows (gnu, msvc)
-- [ ] Build release binary for each target
-- [ ] Package as tar.gz (unix) or zip (windows) with sha256
-- [ ] Upload as artifacts
+- [x] `workflow_call` trigger (called by release)
+- [x] Matrix: linux (x86_64 gnu/musl, aarch64 gnu/musl, armv7), macOS (x86_64, aarch64), Windows (gnu, msvc)
+- [x] Build release binary for each target
+- [x] Package as tar.gz (unix) or zip (windows) with sha256
+- [x] Upload as artifacts
 
 ### 5c. `.github/workflows/release.yml` — GitHub releases
 
-- [ ] Triggers: push tag `v*.*.*`, workflow_dispatch with tag input
-- [ ] Calls build.yml, then downloads artifacts and uploads to GitHub release
-- [ ] Permissions: `contents: write`
+- [x] Triggers: push tag `v*.*.*`, workflow_dispatch with tag input
+- [x] Calls build.yml, then downloads artifacts and uploads to GitHub release
+- [x] Permissions: `contents: write`
+
+> Tag pattern uses `tomb/v*.*.*` instead of `v*.*.*` to support a
+> monorepo-style tag namespace.
 
 ### 5d. `.github/workflows/workflow-security.yml` — workflow linting
 
-- [ ] Triggers: push to main, PRs
-- [ ] Steps: actionlint, pinact (pin check), zizmor (security audit)
-- [ ] Sparse checkout `.github/workflows` only
+- [x] Triggers: push to main, PRs
+- [x] Steps: actionlint, pinact (pin check), zizmor (security audit)
+- [x] Sparse checkout `.github/workflows` only
 
 ## 6. Renovate (dependency updates)
 

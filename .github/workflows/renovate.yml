@@ -1,0 +1,119 @@
+name: Renovate
+
+on:
+  push:
+    branches: 
+      - main
+  schedule:
+    - cron: '0 0 * * *'
+  workflow_dispatch:
+    inputs:
+      log_level:
+        description: 'Log level'
+        required: false
+        default: 'info'
+        type: choice
+        options:
+          - info
+          - debug
+          - warn
+      repoCache:
+        description: 'Repository cache mode'
+        required: false
+        type: choice
+        default: enabled
+        options:
+          - enabled
+          - disabled
+          - reset
+
+concurrency:
+  group: renovate
+  cancel-in-progress: true
+
+permissions: {}
+
+env:
+  # This is the dir renovate provides -- if we set our own directory via cacheDir, we can run into permissions issues.
+  # It is also possible to cache a higher level of the directory, but it has minimal benefit. While renovate execution
+  # time gets faster, it also takes longer to upload the cache as it grows bigger.
+  cache_dir: /tmp/renovate/cache
+  # This can be manually changed to bust the cache if neccessary.
+  cache_key: renovate-cache
+
+jobs:
+  renovate:
+    name: Renovate
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write # Required to delete existing cache
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+          sparse-checkout: |
+            .cargo
+            .github
+            Cargo.lock
+            Cargo.toml
+            README.md
+            renovate-config.json
+            rust-toolchain.toml
+          sparse-checkout-cone-mode: false
+
+      - uses: actions/create-github-app-token@29824e69f54612133e76f7eaac726eef6c875baf # v2.2.1
+        id: app-token
+        with:
+          app-id: ${{ vars.RENOVATE_APP_ID }}
+          private-key: ${{ secrets.RENOVATE_APP_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+          repositories: |
+            tomb
+
+      - name: Restore cache
+        if: github.event.inputs.repoCache != 'disabled'
+        id: cache-restore
+        uses: actions/cache/restore@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5.0.3
+        with:
+          path: ${{ env.cache_dir }}
+          key: ${{ env.cache_key }}
+
+      - name: Try fix cache permissions
+        if: ${{ steps.cache-restore.outputs.cache-hit }}
+        continue-on-error: true
+        run: |
+          set -x
+          
+          # Unfortunately, the permissions expected within renovate's docker container
+          # are different than the ones given after the cache is restored. We have to
+          # change ownership to solve this. We also need to have correct permissions in
+          # the entire /tmp/renovate tree, not just the section with the repo cache.
+          sudo chown -R 12021:0 /tmp/renovate/
+          ls -R "${cache_dir}"
+
+      - name: Run renovate
+        uses: renovatebot/github-action@7b4b65bf31e07d4e3e51708d07700fb41bc03166 # v46.1.3
+        env:
+          RENOVATE_REPOSITORY_CACHE: ${{ github.event.inputs.repoCache || 'enabled' }}
+          RENOVATE_REPOSITORIES: ${{ github.repository }}
+          LOG_LEVEL: ${{ github.event.inputs.log_level || 'info' }}
+        with:
+          renovate-version: 43.60.3
+          configurationFile: renovate-config.json
+          token: '${{ steps.app-token.outputs.token }}'
+
+      - name: Delete previous cache
+        if: ${{ github.event.inputs.repoCache != 'disabled' && steps.cache-restore.outputs.cache-hit }}
+        continue-on-error: true
+        run: gh cache delete "${cache_key}"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Save cache
+        uses: actions/cache/save@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5.0.3
+        if: github.event.inputs.repoCache != 'disabled'
+        with:
+          path: ${{ env.cache_dir }}
+          key: ${{ env.cache_key }}

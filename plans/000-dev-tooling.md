@@ -16,14 +16,11 @@ components = ["rust-std", "rust-analyzer", "rustfmt", "clippy"]
 
 ## 2. `.gitignore`
 
-- [ ] Create `.gitignore`:
+- [x] Create `.gitignore`
 
-```
-target/
-**/*.rs.bk
-*.pdb
-.obsidian
-```
+> Used `cargo init` generated `.gitignore` as the base instead of a
+> minimal hand-written one. Adds `debug/` and keeps helpful comments.
+> `.obsidian` excluded since not currently needed.
 
 ## 3. Cargo profiles
 

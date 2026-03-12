@@ -133,7 +133,7 @@ changelog:
 
 ## 7. CODEOWNERS
 
-- [ ] Create `.github/CODEOWNERS`:
+- [x] Create `.github/CODEOWNERS`:
 
 ```
 * @erikjuhani
@@ -141,10 +141,10 @@ changelog:
 
 ## 8. Changelog with git-cliff
 
-- [ ] Create `cliff.toml` configured for non-conventional commits
-- [ ] Commit parsers using `Changelog:` tags (added, changed, fixed, removed, etc.)
-- [ ] Filter out merge commits and renovate/dependabot commits into Dependencies group
-- [ ] Template linking commits and PRs to GitHub
+- [x] Create `cliff.toml` configured for non-conventional commits
+- [x] Commit parsers using `Changelog:` tags (added, changed, fixed, removed, etc.)
+- [x] Filter out merge commits and renovate/dependabot commits into Dependencies group
+- [x] Template linking commits and PRs to GitHub
 
 ## Verify
 

@@ -24,7 +24,7 @@ components = ["rust-std", "rust-analyzer", "rustfmt", "clippy"]
 
 ## 3. Cargo profiles
 
-- [ ] Add CI profile to workspace `Cargo.toml`:
+- [x] Add CI profile to workspace `Cargo.toml`:
 
 ```toml
 [profile.ci]

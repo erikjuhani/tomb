@@ -100,36 +100,36 @@ changelog:
 
 ### 6a. `renovate-config.json`
 
-- [ ] Extend `config:best-practices`, disable dashboard, daily schedule
-- [ ] `rebaseWhen: behind-base-branch`
-- [ ] `minimumReleaseAge: 3 days`, `osvVulnerabilityAlerts: true`
-- [ ] Disable semantic commits (we use our own style)
-- [ ] Lock file maintenance enabled
-- [ ] Custom managers:
+- [x] Extend `config:best-practices`, disable dashboard, daily schedule
+- [x] `rebaseWhen: behind-base-branch`
+- [x] `minimumReleaseAge: 3 days`, `osvVulnerabilityAlerts: true`
+- [x] Disable semantic commits (we use our own style)
+- [x] Lock file maintenance enabled
+- [x] Custom managers:
   - `rust-toolchain.toml` channel version
   - Renovate self-version in workflow
   - zizmor version in workflow
-- [ ] Package rules:
+- [x] Package rules:
   - Automerge minor/patch for renovate bot and GitHub Actions
   - Automerge patch for all GitHub Actions
 
 ### 6b. `.github/workflows/renovate.yml`
 
-- [ ] Self-hosted renovate via `renovatebot/github-action`
-- [ ] Daily schedule + push to main + manual dispatch
-- [ ] Sparse checkout (only config files + Cargo manifests)
-- [ ] Cache renovate repository cache between runs
-- [ ] Requires GitHub App token (app ID + private key in secrets)
+- [x] Self-hosted renovate via `renovatebot/github-action`
+- [x] Daily schedule + push to main + manual dispatch
+- [x] Sparse checkout (only config files + Cargo manifests)
+- [x] Cache renovate repository cache between runs
+- [x] Requires GitHub App token (app ID + private key in secrets)
 
 ### 6c. `.github/workflows/renovate-validate.yml`
 
-- [ ] Validates `renovate-config.json` on changes
-- [ ] Runs renovate-config-validator in Docker
+- [x] Validates `renovate-config.json` on changes
+- [x] Runs renovate-config-validator in Docker
 
 ### 6d. `.github/workflows/renovate-auto-approve.yml`
 
-- [ ] Auto-approves renovate PRs that have auto-merge enabled
-- [ ] Uses a separate GitHub App for approval (to satisfy branch protection requiring reviews)
+- [x] Auto-approves renovate PRs that have auto-merge enabled
+- [x] Uses a separate GitHub App for approval (to satisfy branch protection requiring reviews)
 
 ## 7. CODEOWNERS
 

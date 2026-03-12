@@ -40,7 +40,7 @@ opt-level = 3
 
 ## 4. Makefile
 
-- [ ] Create `Makefile` with common dev tasks:
+- [x] Create `Makefile` with common dev tasks:
 
 ```makefile
 .PHONY: fmt fmt-check check changelog

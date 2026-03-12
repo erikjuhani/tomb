@@ -6,7 +6,7 @@ Prerequisite: none (can be done in parallel with 001-cargo-root)
 
 ## 1. Rust toolchain pinning
 
-- [ ] Create `rust-toolchain.toml`:
+- [x] Create `rust-toolchain.toml`:
 
 ```toml
 [toolchain]

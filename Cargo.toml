@@ -1,0 +1,13 @@
+[workspace]
+resolver = "3"
+members = ["tomb-cli"]
+
+[profile.ci]
+inherits = "dev"
+opt-level = 0
+
+[profile.dev]
+split-debuginfo = "unpacked"
+
+[profile.dev.build-override]
+opt-level = 3

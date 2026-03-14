@@ -1,0 +1,63 @@
+name: Test
+
+on: 
+  push:
+    branches:
+      - main
+      - v2
+  pull_request:
+    types:
+      - opened
+      - synchronize
+      - reopened
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions: {}
+
+env:
+  CARGO_TERM_COLOR: always
+  CARGO_INCREMENTAL: 0
+  RUST_BACKTRACE: 1
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      with:
+        persist-credentials: false
+
+    - name: Toolchain
+      run: rustup toolchain install
+
+    - name: Cache
+      uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5.0.3
+      with:
+        path: |
+          ~/.cargo/registry
+          ~/.cargo/git
+          target
+        key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+
+    - name: Format check
+      run: make fmt-check
+
+    - name: Check
+      run: cargo check --locked --profile ci --workspace --all-targets
+
+    - name: Clippy
+      run: cargo clippy --profile ci --workspace --all-targets -- -D warnings
+
+    - name: Test
+      run: cargo test --profile ci --workspace --all-targets
+
+    - name: Build and Package
+      run: |
+        cargo build --profile ci
+        cargo package --no-verify

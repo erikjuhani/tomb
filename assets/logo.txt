@@ -1,0 +1,21 @@
+**Big logo:**
+
+                           ▓████▓ 
+                          ▓██░ ▒▓▓
+                          ████▒▓▓▒
+                          ████▒▓▒░
+                          ███▓░▒░░
+                          ██▓▒░░░░
+                          █▓▒▒░░░░
+                          ▒▒▒▒░░░░
+
+                            Tomb 
+
+Unearth your buried tasks. A command line task management tool.
+
+**Small logo:**
+
+ ╭─╮
+ │○│ Tomb
+ │││ Unearth your buried tasks. A command line task management tool.
+ ╰─╯

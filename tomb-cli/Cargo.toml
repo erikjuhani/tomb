@@ -1,0 +1,11 @@
+[package]
+name = "tomb-cli"
+version = "0.1.0"
+edition = "2024"
+authors = ["Erik Kinnunen <erik.kinn@gmail.com>"]
+description = "Unearth your buried tasks. A command line task management tool."
+homepage = "https://github.com/erikjuhani/tomb"
+repository = "https://github.com/erikjuhani/tomb"
+license = "GPL-3.0"
+
+[dependencies]

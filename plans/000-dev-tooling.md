@@ -148,7 +148,7 @@ changelog:
 
 ## Verify
 
-- [ ] `make check` passes locally
-- [ ] Push to GitHub → test workflow runs green
-- [ ] Renovate config validates
-- [ ] `git-cliff` generates a changelog
+- [x] `make check` passes locally
+- [x] Push to GitHub → test workflow runs green
+- [x] Renovate config validates
+- [x] `git-cliff` generates a changelog

@@ -2,8 +2,12 @@ use std::path::PathBuf;
 
 use clap::{Parser, Subcommand};
 
+use crate::version;
+
+const VERSION_INFO: version::VersionInfo = version::VersionInfo::from_env();
+
 #[derive(Parser)]
-#[command(about, version = version_string())]
+#[command(name = "tomb", version = VERSION_INFO.to_string())]
 pub struct Cli {
     #[command(subcommand)]
     pub command: Commands,

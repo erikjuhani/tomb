@@ -48,56 +48,17 @@ Add `model.rs` with the core data structures that the rest of the crate operates
 
 Add `cli.rs` with clap derive structs and wire up `main.rs` to parse args and dispatch. Every match arm uses `todo!()` for now. Include `--version` from day one using cargo's version format.
 
-- [ ] Create `tomb-cli/build.rs` to inject git commit info at compile time. Gracefully handles non-git builds by simply not setting the env vars:
+- [x] Create `tomb-cli/build.rs` to inject git commit info at compile time
+- [x] Add `[[bin]]` section to `Cargo.toml` naming the binary `tomb`
 
-```rust
-use std::path::Path;
-use std::process::Command;
-
-fn main() {
-    commit_info();
-}
-
-fn commit_info() {
-    let manifest_dir = std::env::var("CARGO_MANIFEST_DIR").unwrap();
-    let workspace_root = Path::new(&manifest_dir).parent().unwrap();
-    if !workspace_root.join(".git").exists() {
-        return;
-    }
-
-    let output = match Command::new("git")
-        .arg("log")
-        .arg("-1")
-        .arg("--date=short")
-        .arg("--format=%h %cd")
-        .arg("--abbrev=9")
-        .output()
-    {
-        Ok(output) if output.status.success() => output,
-        _ => return,
-    };
-
-    let stdout = String::from_utf8(output.stdout).unwrap();
-    let mut parts = stdout.trim().splitn(2, ' ');
-    let Some(short_hash) = parts.next() else { return };
-    let Some(date) = parts.next() else { return };
-
-    let version = std::env::var("CARGO_PKG_VERSION").unwrap();
-    println!("cargo::rustc-env=TOMB_VERSION_INFO={version} ({short_hash} {date})");
-}
-```
-
-- [ ] Create `tomb-cli/src/cli.rs` with `Cli` and `Commands` enum:
+- [ ] Create `tomb-cli/src/cli.rs` with `Cli` and `Commands` enum. Use `Cli::command().version()` at runtime to set the version string since `format!` can't be used in derive attributes:
 
 ```rust
 use std::path::PathBuf;
-use clap::{Parser, Subcommand};
+use clap::{CommandFactory, Parser, Subcommand};
 
 #[derive(Parser)]
-#[command(
-    version = option_env!("TOMB_VERSION_INFO").unwrap_or(env!("CARGO_PKG_VERSION")),
-    about,
-)]
+#[command(about)]
 pub struct Cli {
     #[command(subcommand)]
     pub command: Commands,
@@ -116,16 +77,28 @@ pub enum Commands {
     Inbox { text: Option<String> },
     Review,
 }
+
+pub fn version_string() -> String {
+    format!(
+        "{} ({} {})",
+        env!("TOMB_VERSION"),
+        env!("TOMB_COMMIT_SHORT_HASH"),
+        env!("TOMB_COMMIT_DATE"),
+    )
+}
 ```
 
-- [ ] Update `tomb-cli/src/main.rs` to parse CLI and match on commands (all arms `todo!()`):
+- [ ] Update `tomb-cli/src/main.rs` to parse CLI with version and match on commands (all arms `todo!()`):
 
 ```rust
-use clap::Parser;
-use tomb_cli::{cli::{Cli, Commands}, error::Result};
+use clap::{CommandFactory, Parser};
+use tomb_cli::cli::{self, Cli, Commands};
+use tomb_cli::error::Result;
 
 fn main() -> Result<()> {
-    let cli = Cli::parse();
+    let cli = Cli::try_parse_from(
+        Cli::command().version(cli::version_string()).get_matches()
+    );
     match cli.command {
         Commands::Init { .. } => todo!(),
         Commands::Add { .. } => todo!(),
@@ -151,11 +124,11 @@ fn main() -> Result<()> {
 
 ```rust
 use clap::CommandFactory;
-use tomb_cli::cli::Cli;
+use tomb_cli::cli::{self, Cli};
 
 #[test]
 fn help_output() {
-    let help = Cli::command().render_help().to_string();
+    let help = Cli::command().version(cli::version_string()).render_help().to_string();
     insta::assert_snapshot!(help);
 }
 ```

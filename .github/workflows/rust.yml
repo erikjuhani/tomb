@@ -1,0 +1,61 @@
+name: Rust
+
+on:
+  - push
+  - pull_request
+
+env:
+  CARGO_TERM_COLOR: always
+  RUSTFLAGS: -D warnings
+  RUST_BACKTRACE: 1
+
+jobs:
+  pulldown-cmark:
+    strategy:
+      matrix:
+        rust-version: ['1.71.1', 'stable', 'nightly']
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Install Rust
+      run: rustup default ${{ matrix.rust-version }}
+    - name: Cargo fmt
+      if: ${{ matrix.rust-version == 'stable' }}
+      run: cargo fmt --check
+    - name: Cargo build
+      if: ${{ matrix.rust-version == '1.71.1' }}
+      run: cargo build --verbose
+    - name: Cargo build the workspace
+      if: ${{ matrix.rust-version != '1.71.1' }}
+      run: cargo build --workspace --verbose
+    - name: Cargo test
+      # dos-fuzzer does not build with old rust version
+      if: ${{ matrix.rust-version == '1.71.1' }}
+      run: cargo test --verbose
+    - name: Cargo test the workspace
+      if: ${{ matrix.rust-version != '1.71.1' }}
+      run: cargo test --verbose --workspace
+    - name: Cargo test with simd feature enabled
+      run: cargo test --features=simd,gen-tests
+    - name: Cargo test with serde feature enabled
+      run: cargo test --features=serde
+    - name: Cargo test without default features
+      run: cargo test --no-default-features
+  regression:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Install Rust
+      working-directory: pulldown-cmark
+      run: rustup default stable
+    - name: Test for superlinear time regressions
+      working-directory: dos-fuzzer
+      run: cargo run --release -- --regressions
+    - name: Check benchmarks are not broken
+      working-directory: bench
+      run: cargo check --benches
+    # Make sure the WASM target builds for the main package
+    - name: Add WASM target
+      run: rustup target add wasm32-unknown-unknown
+    - name: Build WASM target
+      run: cargo build --package pulldown-cmark --target wasm32-unknown-unknown

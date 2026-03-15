@@ -1,12 +1,23 @@
-fn main() {
-    println!("{}", get_version_string());
-}
+use clap::{CommandFactory, FromArgMatches};
+use tomb_cli::{
+    cli::{Cli, Commands},
+    error::Result,
+};
 
-fn get_version_string() -> String {
-    format!(
-        "tomb {} ({} {})",
-        env!("TOMB_VERSION"),
-        env!("TOMB_COMMIT_SHORT_HASH"),
-        env!("TOMB_COMMIT_DATE")
-    )
+fn main() -> Result<()> {
+    let matches = Cli::command().get_matches();
+    let cli = Cli::from_arg_matches(&matches).unwrap();
+
+    match cli.command {
+        Commands::Init { .. } => todo!(),
+        Commands::Add { .. } => todo!(),
+        Commands::Done { .. } => todo!(),
+        Commands::Start { .. } => todo!(),
+        Commands::Cancel { .. } => todo!(),
+        Commands::List { .. } => todo!(),
+        Commands::Show { .. } => todo!(),
+        Commands::Sync => todo!(),
+        Commands::Inbox { .. } => todo!(),
+        Commands::Review => todo!(),
+    }
 }

@@ -2,9 +2,15 @@
 
 Implement `tomb-cli/src/commands/inbox.rs`.
 
-Prerequisite: 003-config.md
+Prerequisite: 009-cmd-init-sync.md (commands/ module exists), 003-config.md
 
-## 1. `tomb inbox <text>` — quick capture
+## 1. Module scaffolding
+
+- [ ] Add `tomb-cli/src/commands/inbox.rs`
+- [ ] Add `pub mod inbox;` to `commands/mod.rs`
+- [ ] Verify: `cargo check -p tomb-cli`
+
+## 2. `tomb inbox <text>` — quick capture
 
 - [ ] Resolve nearest inbox file via `Config::nearest_inbox(cwd)`
 - [ ] Error if no inbox configured
@@ -12,19 +18,19 @@ Prerequisite: 003-config.md
 - [ ] Create the file if it doesn't exist
 - [ ] Print: `Added to {inbox_path}`
 
-## 2. `tomb inbox` — open in editor
+## 3. `tomb inbox` — open in editor
 
 - [ ] Resolve nearest inbox file
 - [ ] Read `$EDITOR` env var (fall back to `vi`)
 - [ ] Spawn editor as child process, wait for exit
 - [ ] No post-processing needed — user edits freely
 
-## 3. Wire into CLI dispatch
+## 4. Wire into CLI dispatch
 
 - [ ] Update `main.rs` match arm for `Inbox`
 - [ ] Branch on `text: Some(_)` vs `None`
 
-## 4. Tests
+## 5. Tests
 
 - [ ] Quick capture appends task line to existing inbox
 - [ ] Quick capture creates inbox file if missing

@@ -4,25 +4,31 @@ Implement `tomb-cli/src/renderer.rs` — serialize `ManagedFile` back to a markd
 
 Prerequisite: 001-cargo-root.md (model types), 004-parser.md (parser exists for round-trip testing)
 
-## 1. Render function
+## 1. Module scaffolding
+
+- [ ] Create `tomb-cli/src/renderer.rs`
+- [ ] Add `pub mod renderer;` to `lib.rs`
+- [ ] Verify: `cargo check -p tomb-cli`
+
+## 2. Render function
 
 - [ ] `pub fn render_managed_file(file: &ManagedFile) -> String`
 - [ ] Build output string by walking the `ManagedFile` structure
 
-## 2. Frontmatter rendering
+## 3. Frontmatter rendering
 
 - [ ] Emit `---\n` delimiters
 - [ ] Write fields in order: `tomb_mode`, `tomb_version`, `context`, `last_rollover`
 - [ ] Only emit fields that are `Some`
 - [ ] Format `last_rollover` as `YYYY-MM-DD`
 
-## 3. Section rendering
+## 4. Section rendering
 
 - [ ] Emit `## {heading}\n\n` for each section
 - [ ] Section heading text: `"Today"`, `"Backlog"`, or `YYYY-MM-DD` for date sections
 - [ ] Section sort order: Today → Backlog → future dates (desc) → past dates (desc)
 
-## 4. Task rendering
+## 5. Task rendering
 
 - [ ] `- [{marker}] {title}` with correct marker char
 - [ ] Append external link before block ID: `[label](url)`
@@ -30,20 +36,20 @@ Prerequisite: 001-cargo-root.md (model types), 004-parser.md (parser exists for 
 - [ ] Indent subtasks: 2 spaces per nesting level
 - [ ] Recurse into `children` with increased indent
 
-## 5. Description rendering
+## 6. Description rendering
 
 - [ ] Emit description lines indented to match their parent task
 - [ ] Preserve blank lines within multi-paragraph descriptions
 - [ ] Preserve code blocks, links, and formatting verbatim
 
-## 6. Spacing
+## 7. Spacing
 
 - [ ] Blank line between sections
 - [ ] Blank line after frontmatter
 - [ ] Consistent trailing newline at end of file
 - [ ] No trailing whitespace on lines
 
-## 7. Tests
+## 8. Tests
 
 - [ ] Round-trip: parse example → render → compare to original (byte-for-byte where possible)
 - [ ] Frontmatter with all fields, with partial fields, with no frontmatter

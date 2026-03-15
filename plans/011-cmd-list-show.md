@@ -2,9 +2,15 @@
 
 Implement `tomb-cli/src/commands/list.rs` and `tomb-cli/src/commands/show.rs`.
 
-Prerequisite: 003-config.md, 007-file-io.md, 008-rollover.md
+Prerequisite: 009-cmd-init-sync.md (commands/ module exists), 003-config.md, 007-file-io.md, 008-rollover.md
 
-## 1. `tomb list [--due <filter>] [--context <ctx>]`
+## 1. Module scaffolding
+
+- [ ] Add `tomb-cli/src/commands/list.rs` and `tomb-cli/src/commands/show.rs`
+- [ ] Add `pub mod list;` and `pub mod show;` to `commands/mod.rs`
+- [ ] Verify: `cargo check -p tomb-cli`
+
+## 2. `tomb list [--due <filter>] [--context <ctx>]`
 
 - [ ] Resolve config → get all file paths
 - [ ] For each file: read, rollover if managed, collect tasks
@@ -32,7 +38,7 @@ Prerequisite: 003-config.md, 007-file-io.md, 008-rollover.md
 - [ ] Show `(no id)` for tasks without IDs
 - [ ] Footer: count of tasks without IDs if any
 
-## 2. `tomb show <id>`
+## 3. `tomb show <id>`
 
 - [ ] Resolve ID prefix across all files
 - [ ] Read and parse the target file
@@ -56,11 +62,11 @@ Prerequisite: 003-config.md, 007-file-io.md, 008-rollover.md
 - [ ] Show subtasks with markers and IDs
 - [ ] Show file path, section name, context
 
-## 3. Wire into CLI dispatch
+## 4. Wire into CLI dispatch
 
 - [ ] Update `main.rs` match arms for `List` and `Show`
 
-## 4. Tests
+## 5. Tests
 
 - [ ] `list` shows tasks from all configured files
 - [ ] `list --due today` filters correctly

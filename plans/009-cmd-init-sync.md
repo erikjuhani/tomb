@@ -2,9 +2,18 @@
 
 Implement `tomb-cli/src/commands/init.rs` and `tomb-cli/src/commands/sync.rs`.
 
-Prerequisite: 003-config.md, 007-file-io.md, 006-id-system.md, 008-rollover.md
+Prerequisite: 001-cargo-root.md (CLI dispatch), 003-config.md, 007-file-io.md, 006-id-system.md, 008-rollover.md
 
-## 1. `tomb init <path> [--context <ctx>]`
+## 1. Module scaffolding
+
+Set up the `commands/` directory structure. This is done once here and subsequent command plans add their modules to it.
+
+- [ ] Create `tomb-cli/src/commands/mod.rs` with `pub mod init;` and `pub mod sync;`
+- [ ] Create `tomb-cli/src/commands/init.rs` and `tomb-cli/src/commands/sync.rs` (empty or minimal)
+- [ ] Add `pub mod commands;` to `lib.rs`
+- [ ] Verify: `cargo check -p tomb-cli`
+
+## 2. `tomb init <path> [--context <ctx>]`
 
 - [ ] Validate path: must not already exist (or prompt to overwrite)
 - [ ] Create parent directories if needed
@@ -17,7 +26,7 @@ Prerequisite: 003-config.md, 007-file-io.md, 006-id-system.md, 008-rollover.md
   - Read existing config, append `[[files]]` entry, write back
 - [ ] Print confirmation: `Created {path}`
 
-## 2. `tomb sync`
+## 3. `tomb sync`
 
 - [ ] Resolve config → get all file paths
 - [ ] For each file:
@@ -28,12 +37,12 @@ Prerequisite: 003-config.md, 007-file-io.md, 006-id-system.md, 008-rollover.md
   - [ ] Write back if any changes were made
 - [ ] Print summary: `Synced {n} files. {ids_assigned} IDs assigned. {dupes_fixed} duplicates fixed. {rollovers} files rolled over.`
 
-## 3. Wire into CLI dispatch
+## 4. Wire into CLI dispatch
 
 - [ ] Update `main.rs` match arms for `Commands::Init` and `Commands::Sync`
 - [ ] Pass resolved config to sync
 
-## 4. Tests
+## 5. Tests
 
 - [ ] `init` creates file with correct frontmatter and sections
 - [ ] `init` with `--context` sets context in frontmatter

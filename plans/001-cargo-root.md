@@ -46,13 +46,58 @@ Add `model.rs` with the core data structures that the rest of the crate operates
 
 ## 4. CLI parsing and entry point
 
-Add `cli.rs` with clap derive structs and wire up `main.rs` to parse args and dispatch. Every match arm uses `todo!()` for now.
+Add `cli.rs` with clap derive structs and wire up `main.rs` to parse args and dispatch. Every match arm uses `todo!()` for now. Include `--version` from day one using cargo's version format.
+
+- [ ] Create `tomb-cli/build.rs` to inject git commit info at compile time. Gracefully handles non-git builds by simply not setting the env vars:
+
+```rust
+use std::path::Path;
+use std::process::Command;
+
+fn main() {
+    commit_info();
+}
+
+fn commit_info() {
+    let manifest_dir = std::env::var("CARGO_MANIFEST_DIR").unwrap();
+    let workspace_root = Path::new(&manifest_dir).parent().unwrap();
+    if !workspace_root.join(".git").exists() {
+        return;
+    }
+
+    let output = match Command::new("git")
+        .arg("log")
+        .arg("-1")
+        .arg("--date=short")
+        .arg("--format=%h %cd")
+        .arg("--abbrev=9")
+        .output()
+    {
+        Ok(output) if output.status.success() => output,
+        _ => return,
+    };
+
+    let stdout = String::from_utf8(output.stdout).unwrap();
+    let mut parts = stdout.trim().splitn(2, ' ');
+    let Some(short_hash) = parts.next() else { return };
+    let Some(date) = parts.next() else { return };
+
+    let version = std::env::var("CARGO_PKG_VERSION").unwrap();
+    println!("cargo::rustc-env=TOMB_VERSION_INFO={version} ({short_hash} {date})");
+}
+```
 
 - [ ] Create `tomb-cli/src/cli.rs` with `Cli` and `Commands` enum:
 
 ```rust
+use std::path::PathBuf;
+use clap::{Parser, Subcommand};
+
 #[derive(Parser)]
-#[command(name = "tomb", about = "Markdown task manager")]
+#[command(
+    version = option_env!("TOMB_VERSION_INFO").unwrap_or(env!("CARGO_PKG_VERSION")),
+    about,
+)]
 pub struct Cli {
     #[command(subcommand)]
     pub command: Commands,
@@ -73,7 +118,44 @@ pub enum Commands {
 }
 ```
 
-- [ ] Update `tomb-cli/src/main.rs` to parse CLI and match on commands (all arms `todo!()`)
+- [ ] Update `tomb-cli/src/main.rs` to parse CLI and match on commands (all arms `todo!()`):
+
+```rust
+use clap::Parser;
+use tomb_cli::{cli::{Cli, Commands}, error::Result};
+
+fn main() -> Result<()> {
+    let cli = Cli::parse();
+    match cli.command {
+        Commands::Init { .. } => todo!(),
+        Commands::Add { .. } => todo!(),
+        Commands::Done { .. } => todo!(),
+        Commands::Start { .. } => todo!(),
+        Commands::Cancel { .. } => todo!(),
+        Commands::List { .. } => todo!(),
+        Commands::Show { .. } => todo!(),
+        Commands::Sync => todo!(),
+        Commands::Inbox { .. } => todo!(),
+        Commands::Review => todo!(),
+    }
+}
+```
+
 - [ ] Add `pub mod cli;` to `lib.rs`
 - [ ] Verify: `cargo check -p tomb-cli`
 - [ ] Verify: `cargo run -p tomb-cli -- --help` shows subcommands
+- [ ] Verify: `cargo run -p tomb-cli -- --version` shows version with commit hash and date
+
+- [ ] Add `insta` to dev-dependencies in `tomb-cli/Cargo.toml`
+- [ ] Add snapshot tests for help output using `insta`:
+
+```rust
+use clap::CommandFactory;
+use tomb_cli::cli::Cli;
+
+#[test]
+fn help_output() {
+    let help = Cli::command().render_help().to_string();
+    insta::assert_snapshot!(help);
+}
+```

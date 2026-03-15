@@ -22,3 +22,7 @@ toml = "1.0.6"
 [dev-dependencies]
 pretty_assertions = "1.4.1"
 tempfile = "3.27.0"
+
+[[bin]]
+name = "tomb"
+path = "src/main.rs"

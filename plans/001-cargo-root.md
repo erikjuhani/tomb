@@ -33,16 +33,16 @@ pub type Result<T> = std::result::Result<T, TombError>;
 
 Add `model.rs` with the core data structures that the rest of the crate operates on.
 
-- [ ] Create `tomb-cli/src/model.rs` with:
-  - `TaskMarker` enum (`Todo`, `InProgress`, `Done`, `Cancelled`) with `char` conversions
+- [x] Create `tomb-cli/src/model.rs` with:
+  - `TaskMarker` enum (`Todo`, `InProgress`, `Done`, `Cancelled`)
   - `Task` struct: `id: Option<String>`, `title: String`, `marker: TaskMarker`, `description: Vec<String>`, `children: Vec<Task>`, `source_range: Option<Range<usize>>`
   - `SectionKind` enum: `Today`, `Backlog`, `Date(NaiveDate)`
   - `Section` struct: `kind: SectionKind`, `tasks: Vec<Task>`
   - `FileMode` enum: `Managed`, `Tracked`
   - `Frontmatter` struct: `mode: Option<FileMode>`, `version: Option<u32>`, `context: Option<String>`, `last_rollover: Option<NaiveDate>`
   - `ManagedFile` struct: `frontmatter: Frontmatter`, `sections: Vec<Section>`, `source: String`
-- [ ] Add `pub mod model;` to `lib.rs`
-- [ ] Verify: `cargo check -p tomb-cli`
+- [x] Add `pub mod model;` to `lib.rs`
+- [x] Verify: `cargo check -p tomb-cli`
 
 ## 4. CLI parsing and entry point
 

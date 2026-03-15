@@ -51,7 +51,7 @@ Add `cli.rs` with clap derive structs and wire up `main.rs` to parse args and di
 - [x] Create `tomb-cli/build.rs` to inject git commit info at compile time
 - [x] Add `[[bin]]` section to `Cargo.toml` naming the binary `tomb`
 
-- [ ] Create `tomb-cli/src/cli.rs` with `Cli` and `Commands` enum. Use `Cli::command().version()` at runtime to set the version string since `format!` can't be used in derive attributes:
+- [x] Create `tomb-cli/src/cli.rs` with `Cli` and `Commands` enum. Use `Cli::command().version()` at runtime to set the version string since `format!` can't be used in derive attributes:
 
 ```rust
 use std::path::PathBuf;
@@ -88,7 +88,7 @@ pub fn version_string() -> String {
 }
 ```
 
-- [ ] Update `tomb-cli/src/main.rs` to parse CLI with version and match on commands (all arms `todo!()`):
+- [x] Update `tomb-cli/src/main.rs` to parse CLI with version and match on commands (all arms `todo!()`):
 
 ```rust
 use clap::{CommandFactory, Parser};
@@ -114,10 +114,10 @@ fn main() -> Result<()> {
 }
 ```
 
-- [ ] Add `pub mod cli;` to `lib.rs`
-- [ ] Verify: `cargo check -p tomb-cli`
-- [ ] Verify: `cargo run -p tomb-cli -- --help` shows subcommands
-- [ ] Verify: `cargo run -p tomb-cli -- --version` shows version with commit hash and date
+- [x] Add `pub mod cli;` to `lib.rs`
+- [x] Verify: `cargo check -p tomb-cli`
+- [x] Verify: `cargo run -p tomb-cli -- --help` shows subcommands
+- [x] Verify: `cargo run -p tomb-cli -- --version` shows version with commit hash and date
 
 - [ ] Add `insta` to dev-dependencies in `tomb-cli/Cargo.toml`
 - [ ] Add snapshot tests for help output using `insta`:

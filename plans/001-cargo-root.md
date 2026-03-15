@@ -8,7 +8,7 @@ The workspace and `tomb-cli` crate already exist. The `pulldown-cmark-task-marke
 
 Add all dependencies except `pulldown-cmark-task-marker` (deferred to plan 002):
 
-- [ ] Add dependencies:
+- [x] Add dependencies:
 
 ```toml
 [dependencies]
@@ -27,7 +27,7 @@ tempfile = "3"
 pretty_assertions = "1"
 ```
 
-- [ ] Verify: `cargo check -p tomb-cli` compiles (with stub source files from later steps)
+- [x] Verify: `cargo check -p tomb-cli` compiles (with stub source files from later steps)
 
 ## 2. Create module files with stub declarations
 

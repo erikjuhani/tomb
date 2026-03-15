@@ -1,6 +1,6 @@
 # Commands: list & show
 
-Implement `src/commands/list.rs` and `src/commands/show.rs`.
+Implement `tomb-cli/src/commands/list.rs` and `tomb-cli/src/commands/show.rs`.
 
 Prerequisite: 003-config.md, 007-file-io.md, 008-rollover.md
 
@@ -73,5 +73,5 @@ Prerequisite: 003-config.md, 007-file-io.md, 008-rollover.md
 
 ## Verify
 
-- [ ] `cargo test -p tomb -- list` and `cargo test -p tomb -- show`
+- [ ] `cargo test -p tomb-cli -- list` and `cargo test -p tomb-cli -- show`
 - [ ] Manual: `tomb list`, `tomb list --due today`, `tomb show <id>`

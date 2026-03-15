@@ -6,12 +6,12 @@ Tomb is a markdown-based task manager with Obsidian compatibility. The v1 is a s
 
 ## Tech Stack
 
-- **Language:** Rust (edition 2021)
+- **Language:** Rust (edition 2024)
 - **CLI:** clap 4 (derive macros)
 - **TUI:** ratatui + crossterm (interactive review)
 - **Config:** serde + toml
 - **Dates:** chrono
-- **Locking:** fs2 (advisory flock)
+- **Locking:** std `File::lock` / `File::lock_shared` (Rust 1.89+)
 - **IDs:** rand (4-char alphanumeric)
 
 ## MVP Scope
@@ -23,7 +23,7 @@ Tomb is a markdown-based task manager with Obsidian compatibility. The v1 is a s
 ## Module Structure
 
 ```
-Cargo.toml              — workspace root
+Cargo.toml              — workspace root (resolver = "3")
 crates/
   pulldown-cmark-task-marker/              — forked pulldown-cmark 0.13.1 (sub-crate)
     Cargo.toml
@@ -34,28 +34,30 @@ crates/
       html.rs           — update HTML rendering for char
       firstpass.rs      — plumb char through
       ...               — rest unchanged from upstream
-src/
-  main.rs               — entry point, clap dispatch
-  lib.rs                — pub mod declarations
-  cli.rs                — clap derive structs
-  error.rs              — TombError enum, Result alias
-  config.rs             — .tomb.toml resolution (walk-up + global fallback)
-  model.rs              — Frontmatter, TaskMarker, Task, Section, ManagedFile
-  parser.rs             — pulldown-cmark events → ManagedFile
-  renderer.rs           — ManagedFile → markdown string
-  rollover.rs           — date-based rollover logic
-  id.rs                 — ID generation, prefix matching, duplicate detection
-  io.rs                 — atomic writes (tmp+rename), advisory file locks, optimistic concurrency
-  commands/
-    mod.rs              — re-exports
-    init.rs             — tomb init
-    add.rs              — tomb add
-    status.rs           — tomb done / start / cancel
-    list.rs             — tomb list
-    show.rs             — tomb show
-    sync.rs             — tomb sync
-    inbox.rs            — tomb inbox
-    review.rs           — tomb review (ratatui TUI)
+tomb-cli/
+  Cargo.toml            — tomb-cli binary crate
+  src/
+    main.rs             — entry point, clap dispatch
+    lib.rs              — pub mod declarations
+    cli.rs              — clap derive structs
+    error.rs            — TombError enum, Result alias
+    config.rs           — .tomb.toml resolution (walk-up + global fallback)
+    model.rs            — Frontmatter, TaskMarker, Task, Section, ManagedFile
+    parser.rs           — pulldown-cmark events → ManagedFile
+    renderer.rs         — ManagedFile → markdown string
+    rollover.rs         — date-based rollover logic
+    id.rs               — ID generation, prefix matching, duplicate detection
+    io.rs               — atomic writes (tmp+rename), advisory file locks, optimistic concurrency
+    commands/
+      mod.rs            — re-exports
+      init.rs           — tomb init
+      add.rs            — tomb add
+      status.rs         — tomb done / start / cancel
+      list.rs           — tomb list
+      show.rs           — tomb show
+      sync.rs           — tomb sync
+      inbox.rs          — tomb inbox
+      review.rs         — tomb review (ratatui TUI)
 ```
 
 ## Parser Strategy: Forked pulldown-cmark
@@ -106,7 +108,7 @@ For **round-tripping**: simple mutations (status change) use surgical edits via 
 
 We use a **Cargo workspace** with a **git subtree** for the pulldown-cmark fork:
 
-- **Workspace**: Root `Cargo.toml` declares `[workspace] members = ["crates/pulldown-cmark-task-marker"]`. The `tomb` binary crate depends on `pulldown-cmark-task-marker` via `path = "crates/pulldown-cmark-task-marker"`.
+- **Workspace**: Root `Cargo.toml` declares `[workspace] members = ["tomb-cli", "crates/pulldown-cmark-task-marker"]`. The `tomb-cli` binary crate depends on `pulldown-cmark-task-marker` via `path = "crates/pulldown-cmark-task-marker"`.
 - **Git subtree**: The upstream pulldown-cmark source is added with `git subtree add --prefix=crates/pulldown-cmark-task-marker`. This embeds the full source in our repo while preserving a path to pull upstream changes.
 - **Upstream sync**: `git subtree pull --prefix=crates/pulldown-cmark-task-marker <remote> <branch> --squash` merges upstream updates. Our changes (~10 lines across 4 files) are isolated to the task list marker type, so conflicts are unlikely.
 
@@ -138,14 +140,16 @@ Each phase has a detailed plan in `plans/`:
 
 Detailed steps in [`001-cargo-root`](plans/001-cargo-root.md) and [`002-tomb-parser`](plans/002-tomb-parser.md).
 
-1. Convert root `Cargo.toml` to workspace with all deps (cargo-root.md §1)
-2. Create all tomb source files: error types, data model, CLI, command stubs (cargo-root.md §2)
-3. Clean up v1 artifacts (cargo-root.md §3)
-4. Add pulldown-cmark as git subtree into `crates/pulldown-cmark-task-marker/` (tomb-parser.md §1)
-5. Strip fork to library-only, rename to pulldown-cmark-task-marker (tomb-parser.md §3)
-6. Apply fork changes: `TaskListMarker(bool)` → `TaskListMarker(char)` (tomb-parser.md §4)
+The workspace and `tomb-cli` crate already exist. Plan 001 adds dependencies and creates all module stubs. Plan 002 can be done before or after — the skeleton compiles without `pulldown-cmark-task-marker`.
 
-**Verify:** `cargo build` succeeds, `cargo run -- --help` shows subcommands, `cargo build -p pulldown-cmark-task-marker` compiles independently.
+1. Add MVP dependencies to `tomb-cli/Cargo.toml` (cargo-root.md §1)
+2. Create all tomb-cli source files: error types, data model, CLI, command stubs (cargo-root.md §2)
+3. Add pulldown-cmark as git subtree into `crates/pulldown-cmark-task-marker/` (tomb-parser.md §1-2)
+4. Strip fork to library-only, rename to pulldown-cmark-task-marker (tomb-parser.md §3)
+5. Apply fork changes: add `ExtendedTaskListMarker(char)` variant (tomb-parser.md §4)
+6. Wire `tomb-cli` to depend on `pulldown-cmark-task-marker` (tomb-parser.md §5)
+
+**Verify:** `cargo build` succeeds, `cargo run -p tomb-cli -- --help` shows subcommands, `cargo build -p pulldown-cmark-task-marker` compiles independently.
 
 ### Phase 2: Config Resolution
 
@@ -158,11 +162,11 @@ Implement `Config::resolve(start_dir)` — walk up from cwd for `.tomb.toml`, fa
 Detailed steps in [`004-parser`](plans/004-parser.md).
 
 Event-driven parser using our forked pulldown-cmark (`parse_managed_file`):
-- Enable options: `ENABLE_TASKLISTS | ENABLE_YAML_STYLE_METADATA_BLOCKS`
+- Enable options: `ENABLE_TASKLISTS | ENABLE_EXTENDED_TASK_MARKERS | ENABLE_YAML_STYLE_METADATA_BLOCKS`
 - Use `into_offset_iter()` to get events with source byte ranges
 - **Frontmatter**: `MetadataBlock(YamlStyle)` events → parse YAML key-value pairs for tomb fields
 - **Headings**: `Heading { level: H2 }` events → classify as Today/Backlog/Date sections
-- **Task list items**: `TaskListMarker(char)` events → map char to `TaskMarker` enum
+- **Task list items**: `ExtendedTaskListMarker(char)` events → map char to `TaskMarker` enum
 - **Links**: `Tag::Link { dest_url, .. }` events → extract external links from task lines
 - **Block IDs**: Extract `^xxxx` from trailing `Text` events on task lines (Obsidian-specific, not handled by pulldown-cmark)
 - **Code blocks, nested lists, descriptions**: All handled correctly by pulldown-cmark's event stream — no manual fence tracking needed
@@ -255,19 +259,26 @@ Detailed steps in [`014-integration-tests`](plans/014-integration-tests.md).
 
 End-to-end tests using `tempfile::TempDir`: init → add → list round-trip, rollover behavior, done cascade, sync ID assignment, inbox capture, prefix matching, conflict detection.
 
-## Dependencies (Cargo.toml)
+## Dependencies
+
+### Root `Cargo.toml` (workspace)
 
 ```toml
 [workspace]
-members = ["crates/pulldown-cmark-task-marker"]
+resolver = "3"
+members = ["tomb-cli", "crates/pulldown-cmark-task-marker"]
+```
 
+### `tomb-cli/Cargo.toml`
+
+```toml
 [package]
-name = "tomb"
+name = "tomb-cli"
 version = "0.1.0"
-edition = "2021"
+edition = "2024"
 
 [dependencies]
-pulldown-cmark-task-marker = { path = "crates/pulldown-cmark-task-marker", default-features = false }
+pulldown-cmark-task-marker = { path = "../crates/pulldown-cmark-task-marker", default-features = false }
 clap = { version = "4", features = ["derive"] }
 serde = { version = "1", features = ["derive"] }
 toml = "0.8"
@@ -276,8 +287,7 @@ rand = "0.9"
 ratatui = "0.29"
 crossterm = "0.28"
 thiserror = "2"
-dirs = "6"
-fs2 = "0.4"
+etcetera = "0.8"
 
 [dev-dependencies]
 tempfile = "3"
@@ -290,13 +300,13 @@ pretty_assertions = "1"
 2. `cargo test` — all unit and integration tests pass
 3. Manual workflow test:
    ```bash
-   tomb init tasks.md --context work
-   tomb add "First task" --due today
-   tomb add "Second task"
-   tomb list
-   tomb start <id>
-   tomb done <id>
-   tomb inbox "Quick thought"
-   tomb review
-   tomb sync
+   cargo run -p tomb-cli -- init tasks.md --context work
+   cargo run -p tomb-cli -- add "First task" --due today
+   cargo run -p tomb-cli -- add "Second task"
+   cargo run -p tomb-cli -- list
+   cargo run -p tomb-cli -- start <id>
+   cargo run -p tomb-cli -- done <id>
+   cargo run -p tomb-cli -- inbox "Quick thought"
+   cargo run -p tomb-cli -- review
+   cargo run -p tomb-cli -- sync
    ```

@@ -1,6 +1,6 @@
 # Markdown Renderer
 
-Implement `src/renderer.rs` — serialize `ManagedFile` back to a markdown string.
+Implement `tomb-cli/src/renderer.rs` — serialize `ManagedFile` back to a markdown string.
 
 Prerequisite: 001-cargo-root.md (model types), 004-parser.md (parser exists for round-trip testing)
 
@@ -55,5 +55,5 @@ Prerequisite: 001-cargo-root.md (model types), 004-parser.md (parser exists for 
 
 ## Verify
 
-- [ ] `cargo test -p tomb -- renderer` — all renderer tests pass
+- [ ] `cargo test -p tomb-cli -- renderer` — all renderer tests pass
 - [ ] Round-trip the design doc's full rollover example: parse → render → parse again → assert equal model

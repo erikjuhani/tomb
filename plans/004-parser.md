@@ -1,6 +1,6 @@
 # Markdown Parser
 
-Implement `src/parser.rs` — consume pulldown-cmark-task-marker (forked pulldown-cmark) events to build `ManagedFile` from markdown source.
+Implement `tomb-cli/src/parser.rs` — consume pulldown-cmark-task-marker (forked pulldown-cmark) events to build `ManagedFile` from markdown source.
 
 Prerequisite: 002-tomb-parser.md (pulldown-cmark-task-marker fork compiles), 001-cargo-root.md (model types exist)
 
@@ -75,5 +75,5 @@ This is the most critical module. It must handle all the markdown constructs in 
 
 ## Verify
 
-- [ ] `cargo test -p tomb -- parser` — all parser tests pass
+- [ ] `cargo test -p tomb-cli -- parser` — all parser tests pass
 - [ ] Parse the full rollover example from the design doc without errors

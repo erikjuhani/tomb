@@ -1,6 +1,6 @@
 # Command: inbox
 
-Implement `src/commands/inbox.rs`.
+Implement `tomb-cli/src/commands/inbox.rs`.
 
 Prerequisite: 003-config.md
 
@@ -34,5 +34,5 @@ Prerequisite: 003-config.md
 
 ## Verify
 
-- [ ] `cargo test -p tomb -- inbox`
+- [ ] `cargo test -p tomb-cli -- inbox`
 - [ ] Manual: `tomb inbox "Quick thought"` → check file → `tomb inbox` → editor opens

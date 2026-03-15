@@ -10,21 +10,14 @@ git subtree add --prefix=crates/pulldown-cmark-task-marker https://github.com/ra
 
 This imports the v0.13.1 tag into `crates/pulldown-cmark-task-marker/` with a single squashed commit.
 
-## 2. Convert root Cargo.toml to workspace
+## 2. Add sub-crate to workspace
 
-Update the root `Cargo.toml` to declare a workspace:
+Update the root `Cargo.toml` to include the new member:
 
 ```toml
 [workspace]
-members = ["crates/pulldown-cmark-task-marker"]
-
-[package]
-name = "tomb"
-version = "0.1.0"
-edition = "2021"
-
-[dependencies]
-pulldown-cmark-task-marker = { path = "crates/pulldown-cmark-task-marker", default-features = false }
+resolver = "3"
+members = ["tomb-cli", "crates/pulldown-cmark-task-marker"]
 ```
 
 ## 3. Strip the fork to library-only
@@ -111,10 +104,10 @@ pub(crate) fn scan_extended_task_list_marker(&mut self) -> Option<char> {
 - [ ] Test: `- []` (empty) does not parse as task in either mode
 - [ ] Test: `- [ab]` (multi-char) does not parse as task in either mode
 
-## 5. Wire tomb crate to use pulldown-cmark-task-marker
+## 5. Wire tomb-cli crate to use pulldown-cmark-task-marker
 
-- [ ] Replace `pulldown-cmark` dependency with `pulldown-cmark-task-marker` in root `Cargo.toml`
-- [ ] Update imports in `src/` from `pulldown_cmark::` to `pulldown_cmark_task_marker::`
+- [ ] Add `pulldown-cmark-task-marker = { path = "../crates/pulldown-cmark-task-marker", default-features = false }` to `tomb-cli/Cargo.toml`
+- [ ] Update imports in `tomb-cli/src/` from `pulldown_cmark::` to `pulldown_cmark_task_marker::`
 - [ ] Enable `ENABLE_TASKLISTS | ENABLE_EXTENDED_TASK_MARKERS` in tomb's parser
 - [ ] `cargo build` — full workspace compiles
 

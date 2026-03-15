@@ -1,6 +1,6 @@
 # Rollover
 
-Implement `src/rollover.rs` — date-based task redistribution for managed files.
+Implement `tomb-cli/src/rollover.rs` — date-based task redistribution for managed files.
 
 Prerequisite: 004-parser.md, 005-renderer.md (model types and round-trip capability)
 
@@ -60,5 +60,5 @@ Implement the 9 rules from the design doc:
 
 ## Verify
 
-- [ ] `cargo test -p tomb -- rollover` — all rollover tests pass
+- [ ] `cargo test -p tomb-cli -- rollover` — all rollover tests pass
 - [ ] Parse design doc example → rollover → render → compare to expected output

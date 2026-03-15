@@ -1,6 +1,6 @@
 # Commands: init & sync
 
-Implement `src/commands/init.rs` and `src/commands/sync.rs`.
+Implement `tomb-cli/src/commands/init.rs` and `tomb-cli/src/commands/sync.rs`.
 
 Prerequisite: 003-config.md, 007-file-io.md, 006-id-system.md, 008-rollover.md
 
@@ -45,5 +45,5 @@ Prerequisite: 003-config.md, 007-file-io.md, 006-id-system.md, 008-rollover.md
 
 ## Verify
 
-- [ ] `cargo test -p tomb -- init` and `cargo test -p tomb -- sync`
+- [ ] `cargo test -p tomb-cli -- init` and `cargo test -p tomb-cli -- sync`
 - [ ] Manual: `tomb init test.md --context test` → verify file contents → `tomb sync` → verify IDs assigned

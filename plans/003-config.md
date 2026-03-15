@@ -1,8 +1,8 @@
 # Config Resolution
 
-Implement `src/config.rs` — locate and parse `.tomb.toml` / global config, resolve file paths, and provide file/inbox lookups to commands.
+Implement `tomb-cli/src/config.rs` — locate and parse `.tomb.toml` / global config, resolve file paths, and provide file/inbox lookups to commands.
 
-Prerequisite: 001-cargo-root.md (stub exists at `src/config.rs`)
+Prerequisite: 001-cargo-root.md (stub exists at `tomb-cli/src/config.rs`)
 
 ## 1. Config data model
 
@@ -15,7 +15,7 @@ Prerequisite: 001-cargo-root.md (stub exists at `src/config.rs`)
 
 - [ ] Walk up from `start_dir` looking for `.tomb.toml`
 - [ ] If found, parse it and set `root_dir` to its parent
-- [ ] If not found, fall back to `~/.config/tomb/config.toml` (use `dirs::config_dir()`)
+- [ ] If not found, fall back to `~/.config/tomb/config.toml` (use `etcetera::choose_base_strategy()` / `config_dir()`)
 - [ ] If neither exists, return a default empty config
 - [ ] Return `TombError::Config` on parse failures
 
@@ -50,5 +50,5 @@ Prerequisite: 001-cargo-root.md (stub exists at `src/config.rs`)
 
 ## Verify
 
-- [ ] `cargo test -p tomb -- config` — all config tests pass
+- [ ] `cargo test -p tomb-cli -- config` — all config tests pass
 - [ ] Manual: create a `.tomb.toml`, run `tomb list` (should resolve config without errors, even if list itself is still a stub)

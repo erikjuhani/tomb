@@ -1,6 +1,6 @@
 # Command: review (ratatui TUI)
 
-Implement `src/commands/review.rs` — interactive inbox/backlog triage.
+Implement `tomb-cli/src/commands/review.rs` — interactive inbox/backlog triage.
 
 Prerequisite: 012-cmd-inbox.md, 010-cmd-add-status.md, ratatui + crossterm dependencies
 
@@ -64,5 +64,5 @@ This is the most complex command — a full TUI with keyboard-driven workflow.
 
 ## Verify
 
-- [ ] `cargo test -p tomb -- review`
+- [ ] `cargo test -p tomb-cli -- review`
 - [ ] Manual: populate inbox → `tomb review` → process items → verify inbox shrinks and tasks appear in managed files

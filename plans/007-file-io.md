@@ -1,12 +1,12 @@
 # File I/O
 
-Implement `src/io.rs` — safe file operations with locking, atomic writes, and optimistic concurrency.
+Implement `tomb-cli/src/io.rs` — safe file operations with locking, atomic writes, and optimistic concurrency.
 
 Prerequisite: 004-parser.md, 005-renderer.md, 006-id-system.md
 
 ## 1. Read — `read_managed_file(path)`
 
-- [ ] Acquire shared (read) lock via `fs2::FileExt::lock_shared()`
+- [ ] Acquire shared (read) lock via `File::lock_shared()`
 - [ ] Read file contents to string
 - [ ] Release lock (drop)
 - [ ] Parse with `parse_managed_file()`
@@ -20,7 +20,7 @@ Prerequisite: 004-parser.md, 005-renderer.md, 006-id-system.md
 
 ## 3. Write — `write_managed_file(path, original_source, file)`
 
-- [ ] Acquire exclusive lock via `fs2::FileExt::lock_exclusive()`
+- [ ] Acquire exclusive lock via `File::lock()`
 - [ ] Re-read current file contents
 - [ ] Compare current contents to `original_source` — if different, return `TombError::Conflict`
 - [ ] Render `file` to string
@@ -52,5 +52,5 @@ Prerequisite: 004-parser.md, 005-renderer.md, 006-id-system.md
 
 ## Verify
 
-- [ ] `cargo test -p tomb -- io` — all I/O tests pass
+- [ ] `cargo test -p tomb-cli -- io` — all I/O tests pass
 - [ ] Tests use `tempfile::TempDir` for isolation

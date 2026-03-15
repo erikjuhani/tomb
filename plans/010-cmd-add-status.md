@@ -1,6 +1,6 @@
 # Commands: add, done, start, cancel
 
-Implement `src/commands/add.rs` and `src/commands/status.rs`.
+Implement `tomb-cli/src/commands/add.rs` and `tomb-cli/src/commands/status.rs`.
 
 Prerequisite: 003-config.md, 007-file-io.md, 006-id-system.md
 
@@ -65,5 +65,5 @@ Prerequisite: 003-config.md, 007-file-io.md, 006-id-system.md
 
 ## Verify
 
-- [ ] `cargo test -p tomb -- add` and `cargo test -p tomb -- status`
+- [ ] `cargo test -p tomb-cli -- add` and `cargo test -p tomb-cli -- status`
 - [ ] Manual: `tomb add "Test task" --due today` → `tomb list` → `tomb done <id>` → `tomb list`

@@ -1,6 +1,6 @@
 # ID System
 
-Implement `src/id.rs` — task ID generation, prefix resolution, assignment, and duplicate detection.
+Implement `tomb-cli/src/id.rs` — task ID generation, prefix resolution, assignment, and duplicate detection.
 
 Prerequisite: 001-cargo-root.md (model types with `Task.id`)
 
@@ -56,4 +56,4 @@ Prerequisite: 001-cargo-root.md (model types with `Task.id`)
 
 ## Verify
 
-- [ ] `cargo test -p tomb -- id` — all ID tests pass
+- [ ] `cargo test -p tomb-cli -- id` — all ID tests pass

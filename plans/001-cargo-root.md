@@ -1,58 +1,21 @@
 # cargo-root: Tomb Crate Setup
 
-Step-by-step tasks for populating the `tomb-cli` crate with all modules, CLI, error types, and data model.
+Incrementally build out the `tomb-cli` crate module by module. Each task is a vertical slice that adds one cohesive piece, keeps the crate compiling, and results in a single focused commit.
 
-The workspace and `tomb-cli` crate already exist. The `pulldown-cmark-task-marker` dependency is added later in plan 002 — this plan scaffolds everything else first so that `cargo check` passes without it.
+The workspace and `tomb-cli` crate already exist with dependencies in place. The `pulldown-cmark-task-marker` dependency is added later in plan 002.
 
 ## 1. Add MVP dependencies to `tomb-cli/Cargo.toml`
 
-Add all dependencies except `pulldown-cmark-task-marker` (deferred to plan 002):
+- [x] Add dependencies
+- [x] Verify: `cargo check -p tomb-cli` compiles
 
-- [x] Add dependencies:
+## 2. Error types
 
-```toml
-[dependencies]
-clap = { version = "4", features = ["derive"] }
-serde = { version = "1", features = ["derive"] }
-toml = "0.8"
-chrono = { version = "0.4", features = ["serde"] }
-rand = "0.9"
-ratatui = "0.29"
-crossterm = "0.28"
-thiserror = "2"
-etcetera = "0.8"
+Add `error.rs` with `TombError` and the `Result` alias. Only include error variants that have a consumer right now — start minimal and grow the enum as later tasks need new variants.
 
-[dev-dependencies]
-tempfile = "3"
-pretty_assertions = "1"
-```
-
-- [x] Verify: `cargo check -p tomb-cli` compiles (with stub source files from later steps)
-
-## 2. Create module files with stub declarations
-
-Create the source file tree under `tomb-cli/src/`. Each file starts as a stub with just enough to compile.
-
-### 2a. `tomb-cli/src/lib.rs` — module declarations
-
-- [ ] Create `tomb-cli/src/lib.rs` with `pub mod` for every module:
-
-```rust
-pub mod cli;
-pub mod commands;
-pub mod config;
-pub mod error;
-pub mod id;
-pub mod io;
-pub mod model;
-pub mod parser;
-pub mod renderer;
-pub mod rollover;
-```
-
-### 2b. `tomb-cli/src/error.rs` — TombError + Result alias
-
-- [ ] Define `TombError` enum using `thiserror`:
+- [ ] Create `tomb-cli/src/error.rs` with `TombError` enum (`Io` variant to start) and `pub type Result<T>`
+- [ ] Create `tomb-cli/src/lib.rs` declaring `pub mod error;`
+- [ ] Verify: `cargo check -p tomb-cli`
 
 ```rust
 use thiserror::Error;
@@ -61,110 +24,97 @@ use thiserror::Error;
 pub enum TombError {
     #[error("I/O error: {0}")]
     Io(#[from] std::io::Error),
-    #[error("Parse error: {0}")]
-    Parse(String),
-    #[error("Config error: {0}")]
-    Config(String),
-    #[error("ID not found: {0}")]
-    IdNotFound(String),
-    #[error("Ambiguous ID prefix '{0}': matches {1:?}")]
-    AmbiguousId(String, Vec<String>),
-    #[error("File conflict: {0}")]
-    Conflict(String),
-    #[error("Not a managed file: {0}")]
-    NotManaged(String),
-    #[error("Unsupported version: {0}")]
-    UnsupportedVersion(u32),
 }
 
 pub type Result<T> = std::result::Result<T, TombError>;
 ```
 
-### 2c. `tomb-cli/src/model.rs` — core data types
+## 3. Model types
 
-- [ ] `TaskMarker` enum: `Todo`, `InProgress`, `Done`, `Cancelled`
-- [ ] `TaskMarker` ↔ `char` conversion: `' '`, `'/'`, `'x'`, `'-'`
-- [ ] `Task` struct: `id: Option<String>`, `title: String`, `marker: TaskMarker`, `description: Vec<String>`, `children: Vec<Task>`, `source_range: Option<Range<usize>>`
-- [ ] `SectionKind` enum: `Today`, `Backlog`, `Date(NaiveDate)`
-- [ ] `Section` struct: `kind: SectionKind`, `tasks: Vec<Task>`
-- [ ] `Frontmatter` struct: `mode: Option<FileMode>`, `version: Option<u32>`, `context: Option<String>`, `last_rollover: Option<NaiveDate>`
-- [ ] `FileMode` enum: `Managed`, `Tracked`
-- [ ] `ManagedFile` struct: `frontmatter: Frontmatter`, `sections: Vec<Section>`, `source: String`
+Add `model.rs` with the core data structures that the rest of the crate operates on. Add error variants to `TombError` only if model code needs them.
 
-### 2d. `tomb-cli/src/cli.rs` — clap derive structs
+- [ ] Create `tomb-cli/src/model.rs` with:
+  - `TaskMarker` enum (`Todo`, `InProgress`, `Done`, `Cancelled`) with `char` conversions
+  - `Task` struct
+  - `SectionKind` enum (`Today`, `Backlog`, `Date(NaiveDate)`)
+  - `Section` struct
+  - `FileMode` enum (`Managed`, `Tracked`)
+  - `Frontmatter` struct
+  - `ManagedFile` struct
+- [ ] Add `pub mod model;` to `lib.rs`
+- [ ] Verify: `cargo check -p tomb-cli`
 
-- [ ] `Cli` struct with `#[command]` and `Commands` subcommand enum
-- [ ] Subcommands matching MVP scope:
+## 4. CLI parsing and entry point
 
-```rust
-#[derive(Parser)]
-#[command(name = "tomb", about = "Markdown task manager")]
-pub struct Cli {
-    #[command(subcommand)]
-    pub command: Commands,
-}
+Add `cli.rs` with clap derive structs and wire up `main.rs` to parse args and dispatch. Every match arm uses `todo!()` for now.
 
-#[derive(Subcommand)]
-pub enum Commands {
-    Init { path: PathBuf, #[arg(long)] context: Option<String> },
-    Add { text: String, #[arg(long)] due: Option<String>, #[arg(long)] context: Option<String> },
-    Done { id: String },
-    Start { id: String },
-    Cancel { id: String },
-    List { #[arg(long)] due: Option<String>, #[arg(long)] context: Option<String> },
-    Show { id: String },
-    Sync,
-    Inbox { text: Option<String> },
-    Review,
-}
-```
+- [ ] Create `tomb-cli/src/cli.rs` with `Cli` and `Commands` enum
+- [ ] Update `tomb-cli/src/main.rs` to parse CLI and match on commands
+- [ ] Add `pub mod cli;` to `lib.rs`
+- [ ] Verify: `cargo check -p tomb-cli`
+- [ ] Verify: `cargo run -p tomb-cli -- --help` shows subcommands
 
-### 2e. `tomb-cli/src/main.rs` — entry point
+## 5. Config
 
-- [ ] Parse CLI args, dispatch to command handlers:
+Add `config.rs` with config resolution logic. This is where tomb looks for its configuration (managed files, context settings).
 
-```rust
-use clap::Parser;
-use tomb_cli::{cli::{Cli, Commands}, error::Result};
+- [ ] Create `tomb-cli/src/config.rs` with `Config` struct and `Config::resolve()` stub
+- [ ] Add `pub mod config;` to `lib.rs`
+- [ ] Add `Config` error variant to `TombError` if needed
+- [ ] Verify: `cargo check -p tomb-cli`
 
-fn main() -> Result<()> {
-    let cli = Cli::parse();
-    match cli.command {
-        Commands::Init { .. } => todo!(),
-        Commands::Add { .. } => todo!(),
-        // ... etc
-    }
-}
-```
+## 6. ID generation and resolution
 
-### 2f. Remaining module stubs
+Add `id.rs` with functions for generating short IDs and resolving prefix matches against a list of tasks.
 
-Each file is created empty or with a placeholder function:
+- [ ] Create `tomb-cli/src/id.rs` with `generate_id`, `resolve_prefix`, `assign_missing_ids`
+- [ ] Add `pub mod id;` to `lib.rs`
+- [ ] Add `IdNotFound` and `AmbiguousId` error variants to `TombError`
+- [ ] Verify: `cargo check -p tomb-cli`
 
-- [ ] `tomb-cli/src/config.rs` — empty struct + `Config::resolve()` stub
-- [ ] `tomb-cli/src/parser.rs` — `pub fn parse_managed_file(input: &str) -> Result<ManagedFile>` stub
-- [ ] `tomb-cli/src/renderer.rs` — `pub fn render_managed_file(file: &ManagedFile) -> String` stub
-- [ ] `tomb-cli/src/rollover.rs` — `pub fn maybe_rollover(file: &mut ManagedFile, today: NaiveDate) -> bool` stub
-- [ ] `tomb-cli/src/id.rs` — `generate_id`, `resolve_prefix`, `assign_missing_ids` stubs
-- [ ] `tomb-cli/src/io.rs` — `read_managed_file`, `write_managed_file` stubs
+## 7. Parser and renderer
 
-### 2g. `tomb-cli/src/commands/` — command module stubs
+Add `parser.rs` and `renderer.rs` together since they are inverses of each other and share model types. The parser turns markdown text into a `ManagedFile`, the renderer turns it back.
 
-- [ ] Create `tomb-cli/src/commands/mod.rs` with re-exports
-- [ ] Create stub files:
-  - `tomb-cli/src/commands/init.rs`
-  - `tomb-cli/src/commands/add.rs`
-  - `tomb-cli/src/commands/status.rs` (done/start/cancel)
-  - `tomb-cli/src/commands/list.rs`
-  - `tomb-cli/src/commands/show.rs`
-  - `tomb-cli/src/commands/sync.rs`
-  - `tomb-cli/src/commands/inbox.rs`
-  - `tomb-cli/src/commands/review.rs`
-- [ ] Each file exports a `pub fn run(...) -> Result<()> { todo!() }`
+- [ ] Create `tomb-cli/src/parser.rs` with `pub fn parse_managed_file(input: &str) -> Result<ManagedFile>`
+- [ ] Create `tomb-cli/src/renderer.rs` with `pub fn render_managed_file(file: &ManagedFile) -> String`
+- [ ] Add `pub mod parser;` and `pub mod renderer;` to `lib.rs`
+- [ ] Add `Parse`, `UnsupportedVersion` error variants to `TombError`
+- [ ] Verify: `cargo check -p tomb-cli`
 
-## 3. Verify full skeleton
+## 8. File I/O
 
-- [ ] `cargo build -p tomb-cli` — crate compiles (stubs only)
-- [ ] `cargo run -p tomb-cli -- --help` — shows all subcommands with descriptions
-- [ ] `cargo run -p tomb-cli -- init foo.md` — panics with `todo!()` (expected)
-- [ ] `cargo test -p tomb-cli` — passes (no tests yet, but no compile errors)
+Add `io.rs` for reading and writing managed files on disk. Depends on parser and renderer.
+
+- [ ] Create `tomb-cli/src/io.rs` with `read_managed_file`, `write_managed_file`
+- [ ] Add `pub mod io;` to `lib.rs`
+- [ ] Add `NotManaged`, `Conflict` error variants to `TombError` if needed
+- [ ] Verify: `cargo check -p tomb-cli`
+
+## 9. Rollover
+
+Add `rollover.rs` for date-based task rollover logic.
+
+- [ ] Create `tomb-cli/src/rollover.rs` with `pub fn maybe_rollover(file: &mut ManagedFile, today: NaiveDate) -> bool`
+- [ ] Add `pub mod rollover;` to `lib.rs`
+- [ ] Verify: `cargo check -p tomb-cli`
+
+## 10. Command modules
+
+Add the `commands/` directory with one module per command (or group of related commands). Wire each into the `main.rs` match. Each command function takes the parsed args and returns `Result<()>`.
+
+- [ ] Create `tomb-cli/src/commands/mod.rs` with submodule declarations
+- [ ] Create command files, each exporting `pub fn run(...) -> Result<()> { todo!() }`:
+  - `commands/init.rs`
+  - `commands/add.rs`
+  - `commands/status.rs` (handles done/start/cancel)
+  - `commands/list.rs`
+  - `commands/show.rs`
+  - `commands/sync.rs`
+  - `commands/inbox.rs`
+  - `commands/review.rs`
+- [ ] Add `pub mod commands;` to `lib.rs`
+- [ ] Update `main.rs` match arms to call command functions instead of `todo!()`
+- [ ] Verify: `cargo build -p tomb-cli`
+- [ ] Verify: `cargo run -p tomb-cli -- --help` shows all subcommands
+- [ ] Verify: `cargo test -p tomb-cli` passes

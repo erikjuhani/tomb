@@ -119,8 +119,8 @@ fn main() -> Result<()> {
 - [x] Verify: `cargo run -p tomb-cli -- --help` shows subcommands
 - [x] Verify: `cargo run -p tomb-cli -- --version` shows version with commit hash and date
 
-- [ ] Add `insta` to dev-dependencies in `tomb-cli/Cargo.toml`
-- [ ] Add snapshot tests for help output using `insta`:
+- [x] Add `insta` to dev-dependencies in `tomb-cli/Cargo.toml`
+- [x] Add snapshot tests for help output using `insta`:
 
 ```rust
 use clap::CommandFactory;

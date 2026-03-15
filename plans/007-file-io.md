@@ -4,7 +4,14 @@ Implement `tomb-cli/src/io.rs` — safe file operations with locking, atomic wri
 
 Prerequisite: 004-parser.md, 005-renderer.md, 006-id-system.md
 
-## 1. Read — `read_managed_file(path)`
+## 1. Module scaffolding
+
+- [ ] Create `tomb-cli/src/io.rs`
+- [ ] Add `pub mod io;` to `lib.rs`
+- [ ] Add `NotManaged` and `Conflict` error variants to `TombError` if needed
+- [ ] Verify: `cargo check -p tomb-cli`
+
+## 2. Read — `read_managed_file(path)`
 
 - [ ] Acquire shared (read) lock via `File::lock_shared()`
 - [ ] Read file contents to string
@@ -12,13 +19,13 @@ Prerequisite: 004-parser.md, 005-renderer.md, 006-id-system.md
 - [ ] Parse with `parse_managed_file()`
 - [ ] Return `(ManagedFile, String)` — model and original source for conflict detection
 
-## 2. Atomic write helper
+## 3. Atomic write helper
 
 - [ ] Write to `path.with_extension("md.tmp")`
 - [ ] `fs::rename(tmp, path)` — atomic on POSIX
 - [ ] Clean up tmp file on error
 
-## 3. Write — `write_managed_file(path, original_source, file)`
+## 4. Write — `write_managed_file(path, original_source, file)`
 
 - [ ] Acquire exclusive lock via `File::lock()`
 - [ ] Re-read current file contents
@@ -27,21 +34,21 @@ Prerequisite: 004-parser.md, 005-renderer.md, 006-id-system.md
 - [ ] Atomic write (tmp + rename)
 - [ ] Release lock
 
-## 4. Mutate — `mutate_managed_file(path, closure)`
+## 5. Mutate — `mutate_managed_file(path, closure)`
 
 - [ ] Convenience function: read → apply closure → assign missing IDs → write
 - [ ] `closure: FnOnce(&mut ManagedFile)`
 - [ ] Handles the full read-modify-write cycle with conflict detection
 - [ ] Returns the mutated `ManagedFile` on success
 
-## 5. Multi-file ID resolution
+## 6. Multi-file ID resolution
 
 - [ ] `resolve_id_across_files(prefix, config) -> Result<(PathBuf, String)>`
 - [ ] Read all configured files, collect all IDs with their file paths
 - [ ] Use `resolve_prefix` to find the target
 - [ ] Return the file path and full ID
 
-## 6. Tests
+## 7. Tests
 
 - [ ] Read + parse a file successfully
 - [ ] Write + re-read round-trips correctly

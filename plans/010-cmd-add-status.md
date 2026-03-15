@@ -2,9 +2,15 @@
 
 Implement `tomb-cli/src/commands/add.rs` and `tomb-cli/src/commands/status.rs`.
 
-Prerequisite: 003-config.md, 007-file-io.md, 006-id-system.md
+Prerequisite: 009-cmd-init-sync.md (commands/ module exists), 003-config.md, 007-file-io.md, 006-id-system.md
 
-## 1. `tomb add <title> [--due <date>] [--context <ctx>]`
+## 1. Module scaffolding
+
+- [ ] Add `tomb-cli/src/commands/add.rs` and `tomb-cli/src/commands/status.rs`
+- [ ] Add `pub mod add;` and `pub mod status;` to `commands/mod.rs`
+- [ ] Verify: `cargo check -p tomb-cli`
+
+## 2. `tomb add <title> [--due <date>] [--context <ctx>]`
 
 - [ ] Resolve target file:
   - If `--context` given, find the managed file matching that context
@@ -20,7 +26,7 @@ Prerequisite: 003-config.md, 007-file-io.md, 006-id-system.md
   - Append task to the section
 - [ ] Print confirmation: `Added: {title} ^{id}`
 
-## 2. `tomb done <id>`
+## 3. `tomb done <id>`
 
 - [ ] Resolve ID prefix across all files (`resolve_id_across_files`)
 - [ ] Use `mutate_managed_file` on the target file:
@@ -29,28 +35,28 @@ Prerequisite: 003-config.md, 007-file-io.md, 006-id-system.md
   - Cascade: mark uncompleted children as `Cancelled`
 - [ ] Print: `Done: {title} ^{id}`
 
-## 3. `tomb start <id>`
+## 4. `tomb start <id>`
 
 - [ ] Same flow as `done` but set marker to `InProgress`
 - [ ] No cascade needed
 - [ ] Print: `Started: {title} ^{id}`
 
-## 4. `tomb cancel <id>`
+## 5. `tomb cancel <id>`
 
 - [ ] Same flow as `done` but set marker to `Cancelled`
 - [ ] Cascade: mark uncompleted children as `Cancelled`
 - [ ] Print: `Cancelled: {title} ^{id}`
 
-## 5. Shared helpers
+## 6. Shared helpers
 
 - [ ] `find_task_mut(file: &mut ManagedFile, id: &str) -> Option<&mut Task>` — recursive search through sections and children
 - [ ] `cascade_cancel(task: &mut Task)` — mark uncompleted children as `Cancelled`, recurse
 
-## 6. Wire into CLI dispatch
+## 7. Wire into CLI dispatch
 
 - [ ] Update `main.rs` match arms for `Add`, `Done`, `Start`, `Cancel`
 
-## 7. Tests
+## 8. Tests
 
 - [ ] `add` with no flags → appends to Backlog
 - [ ] `add --due today` → appends to Today section

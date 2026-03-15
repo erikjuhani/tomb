@@ -2,11 +2,17 @@
 
 Implement `tomb-cli/src/commands/review.rs` — interactive inbox/backlog triage.
 
-Prerequisite: 012-cmd-inbox.md, 010-cmd-add-status.md, ratatui + crossterm dependencies
+Prerequisite: 009-cmd-init-sync.md (commands/ module exists), 012-cmd-inbox.md, 010-cmd-add-status.md, ratatui + crossterm dependencies
 
 This is the most complex command — a full TUI with keyboard-driven workflow.
 
-## 1. Inbox parsing
+## 1. Module scaffolding
+
+- [ ] Add `tomb-cli/src/commands/review.rs`
+- [ ] Add `pub mod review;` to `commands/mod.rs`
+- [ ] Verify: `cargo check -p tomb-cli`
+
+## 2. Inbox parsing
 
 - [ ] Read inbox file contents
 - [ ] Classify each item:
@@ -15,13 +21,13 @@ This is the most complex command — a full TUI with keyboard-driven workflow.
   - Skip blank lines (they separate items)
 - [ ] Build a `Vec<InboxItem>` with `enum InboxItem { Task(String), Text(String) }`
 
-## 2. TUI setup
+## 3. TUI setup
 
 - [ ] Enter ratatui alternate screen (`crossterm::terminal::enable_raw_mode`, `EnterAlternateScreen`)
 - [ ] Create `Terminal<CrosstermBackend<Stdout>>`
 - [ ] Set up panic hook to restore terminal on crash
 
-## 3. Review loop — inbox mode
+## 4. Review loop — inbox mode
 
 - [ ] State: current item index, list of items, list of actions taken
 - [ ] Display:
@@ -36,25 +42,25 @@ This is the most complex command — a full TUI with keyboard-driven workflow.
   - `e` → edit item text inline (simple line edit)
   - `q` → exit review early
 
-## 4. Context and date prompts
+## 5. Context and date prompts
 
 - [ ] After pressing `a`, show context selection (list contexts from config)
 - [ ] Accept typed input or number selection
 - [ ] Then prompt for due date: accept `today`, `tomorrow`, `YYYY-MM-DD`, or Enter to skip (→ Backlog)
 - [ ] Add the task and show confirmation inline
 
-## 5. Post-review cleanup
+## 6. Post-review cleanup
 
 - [ ] Rewrite inbox file with only skipped/unprocessed items
 - [ ] Deleted and added items are removed
 - [ ] Print summary: `Review complete. {n} items processed, {skipped} skipped.`
 
-## 6. Terminal restoration
+## 7. Terminal restoration
 
 - [ ] On normal exit, quit, or panic: restore terminal (disable raw mode, leave alternate screen)
 - [ ] Use `scopeguard` or `Drop` impl for safety
 
-## 7. Tests
+## 8. Tests
 
 - [ ] Inbox parsing: tasks and text items classified correctly
 - [ ] Inbox rewrite: only skipped items remain

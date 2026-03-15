@@ -140,18 +140,16 @@ Each phase has a detailed plan in `plans/`:
 
 Detailed steps in [`001-cargo-root`](plans/001-cargo-root.md) and [`002-tomb-parser`](plans/002-tomb-parser.md).
 
-The workspace and `tomb-cli` crate already exist. Plan 001 incrementally builds out the crate module by module — each task adds one cohesive piece (error types, then model, then CLI, then config, etc.) as a vertical slice that keeps the crate compiling. Plan 002 can be done before or after — the skeleton compiles without `pulldown-cmark-task-marker`.
+The workspace and `tomb-cli` crate already exist. Plan 001 sets up the foundation: dependencies, error types, model types, and CLI entry point. Each subsequent plan (003–013) owns its own module scaffolding as its first step — no stubs are created ahead of time. Plan 002 can be done before or after — the skeleton compiles without `pulldown-cmark-task-marker`.
 
 1. Add MVP dependencies to `tomb-cli/Cargo.toml` (cargo-root.md §1)
 2. Error types — `TombError` enum and `Result` alias (cargo-root.md §2)
 3. Model types — core data structures (cargo-root.md §3)
 4. CLI parsing and entry point (cargo-root.md §4)
-5. Config, ID, parser/renderer, I/O, rollover module stubs (cargo-root.md §5–9)
-6. Command module stubs wired into `main.rs` dispatch (cargo-root.md §10)
-7. Add pulldown-cmark as git subtree into `crates/pulldown-cmark-task-marker/` (tomb-parser.md §1-2)
-8. Strip fork to library-only, rename to pulldown-cmark-task-marker (tomb-parser.md §3)
-9. Apply fork changes: add `ExtendedTaskListMarker(char)` variant (tomb-parser.md §4)
-10. Wire `tomb-cli` to depend on `pulldown-cmark-task-marker` (tomb-parser.md §5)
+5. Add pulldown-cmark as git subtree into `crates/pulldown-cmark-task-marker/` (tomb-parser.md §1-2)
+6. Strip fork to library-only, rename to pulldown-cmark-task-marker (tomb-parser.md §3)
+7. Apply fork changes: add `ExtendedTaskListMarker(char)` variant (tomb-parser.md §4)
+8. Wire `tomb-cli` to depend on `pulldown-cmark-task-marker` (tomb-parser.md §5)
 
 **Verify:** `cargo build` succeeds, `cargo run -p tomb-cli -- --help` shows subcommands, `cargo build -p pulldown-cmark-task-marker` compiles independently.
 

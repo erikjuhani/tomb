@@ -52,11 +52,31 @@ pub enum Commands {
     Review,
 }
 
-pub fn version_string() -> String {
-    format!(
-        "{} ({} {})",
-        env!("TOMB_VERSION"),
-        env!("TOMB_COMMIT_SHORT_HASH"),
-        env!("TOMB_COMMIT_DATE")
-    )
+#[cfg(test)]
+mod tests {
+    use clap::CommandFactory;
+
+    use crate::{cli::Cli, version};
+
+    #[test]
+    fn version_output() {
+        let help = Cli::command()
+            .version(
+                version::VersionInfo {
+                    version: "0.1.0",
+                    short_hash: "abc123def",
+                    date: "2026-03-15",
+                }
+                .to_string(),
+            )
+            .render_version()
+            .to_string();
+        insta::assert_snapshot!(help)
+    }
+
+    #[test]
+    fn help_output() {
+        let help = Cli::command().render_help().to_string();
+        insta::assert_snapshot!(help)
+    }
 }

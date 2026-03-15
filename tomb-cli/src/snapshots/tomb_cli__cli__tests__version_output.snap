@@ -1,0 +1,5 @@
+---
+source: tomb-cli/src/cli.rs
+expression: help
+---
+tomb 0.1.0 (abc123def 2026-03-15)

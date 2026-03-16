@@ -96,9 +96,7 @@ mod tree;
 
 use std::fmt::Display;
 
-pub use crate::parse::{
-    BrokenLink, BrokenLinkCallback, DefaultBrokenLinkCallback, OffsetIter, Parser, RefDefs,
-};
+pub use crate::parse::{BrokenLink, BrokenLinkCallback, DefaultBrokenLinkCallback, OffsetIter, Parser, RefDefs};
 pub use crate::strings::{CowStr, InlineStr};
 pub use crate::utils::*;
 
@@ -609,6 +607,15 @@ pub enum Event<'a> {
     /// - [x] checked
     /// ```
     TaskListMarker(bool),
+    /// An extended task list marker, rendered as a checkbox in HTML. Contains a single char when
+    /// it is checked. Only parsed and emitted with [`Options::ENABLE_EXTENDED_TASK_MARKERS`].
+    /// ```markdown
+    /// - [ ] unchecked
+    /// - [-] checked
+    /// - [.] checked
+    /// - [x] checked
+    /// ```
+    ExtendedTaskListMarker(char),
 }
 
 impl<'a> Event<'a> {
@@ -626,6 +633,7 @@ impl<'a> Event<'a> {
             Event::SoftBreak => Event::SoftBreak,
             Event::HardBreak => Event::HardBreak,
             Event::Rule => Event::Rule,
+            Event::ExtendedTaskListMarker(c) => Event::ExtendedTaskListMarker(c),
             Event::TaskListMarker(b) => Event::TaskListMarker(b),
         }
     }
@@ -634,7 +642,6 @@ impl<'a> Event<'a> {
 /// Table column text alignment.
 #[derive(Copy, Clone, Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-
 pub enum Alignment {
     /// Default text alignment.
     None,
@@ -733,6 +740,9 @@ bitflags::bitflags! {
         const ENABLE_SUBSCRIPT = 1 << 14;
         /// Obsidian-style Wikilinks.
         const ENABLE_WIKILINKS = 1 << 15;
+        /// Obsidian-style extended task list markers that support any character for checked
+        /// marker.
+        const ENABLE_EXTENDED_TASK_MARKERS = 1 << 16;
     }
 }
 

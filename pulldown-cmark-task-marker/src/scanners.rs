@@ -279,10 +279,7 @@ impl<'a> LineStart<'a> {
     ///
     /// Return value is the amount of indentation, or `None` if it's not a
     /// definition list marker.
-    pub(crate) fn scan_definition_list_definition_marker_with_indent(
-        &mut self,
-        indent: usize,
-    ) -> Option<usize> {
+    pub(crate) fn scan_definition_list_definition_marker_with_indent(&mut self, indent: usize) -> Option<usize> {
         let save = self.clone();
         if self.scan_ch(b':') {
             let save = self.clone();
@@ -304,10 +301,7 @@ impl<'a> LineStart<'a> {
     /// Return value is the character, the start index, and the indent in spaces.
     /// For ordered list markers, the character will be one of b'.' or b')'. For
     /// bullet list markers, it will be one of b'-', b'+', or b'*'.
-    pub(crate) fn scan_list_marker_with_indent(
-        &mut self,
-        indent: usize,
-    ) -> Option<(u8, u64, usize)> {
+    pub(crate) fn scan_list_marker_with_indent(&mut self, indent: usize) -> Option<(u8, u64, usize)> {
         let save = self.clone();
         if self.ix < self.bytes.len() {
             let c = self.bytes[self.ix];
@@ -351,12 +345,7 @@ impl<'a> LineStart<'a> {
         None
     }
 
-    fn finish_list_marker(
-        &mut self,
-        c: u8,
-        start: u64,
-        mut indent: usize,
-    ) -> Option<(u8, u64, usize)> {
+    fn finish_list_marker(&mut self, c: u8, start: u64, mut indent: usize) -> Option<(u8, u64, usize)> {
         let save = self.clone();
 
         // skip the rest of the line if it's blank
@@ -413,6 +402,34 @@ impl<'a> LineStart<'a> {
         Some(is_checked)
     }
 
+    /// Returns Some(char) when an extended task list marker was found (marker containing _any_
+    /// char). Resets itself to original state otherwise.
+    pub(crate) fn scan_extended_task_list_marker(&mut self) -> Option<char> {
+        let save = self.clone();
+        self.scan_space_upto(3);
+
+        if !self.scan_ch(b'[') {
+            *self = save;
+            return None;
+        }
+        let marker = match self.bytes.get(self.ix) {
+            Some(&c) if !is_ascii_whitespace_no_nl(c) && c != b']' => {
+                self.ix += 1;
+                c
+            }
+            _ => {
+                *self = save;
+                return None;
+            }
+        };
+        if !self.scan_ch(b']') {
+            *self = save;
+            return None;
+        }
+
+        Some(marker as char)
+    }
+
     pub(crate) fn bytes_scanned(&self) -> usize {
         self.ix
     }
@@ -447,10 +464,7 @@ fn is_digit(c: u8) -> bool {
 }
 
 fn is_valid_unquoted_attr_value_char(c: u8) -> bool {
-    !matches!(
-        c,
-        b'\'' | b'"' | b' ' | b'=' | b'>' | b'<' | b'`' | b'\n' | b'\r'
-    )
+    !matches!(c, b'\'' | b'"' | b' ' | b'=' | b'>' | b'<' | b'`' | b'\n' | b'\r')
 }
 
 // scan a single character
@@ -511,11 +525,7 @@ pub(crate) fn scan_nextline(bytes: &[u8]) -> usize {
 
 // return: end byte for closing code fence, or None
 // if the line is not a closing code fence
-pub(crate) fn scan_closing_code_fence(
-    bytes: &[u8],
-    fence_char: u8,
-    n_fence_char: usize,
-) -> Option<usize> {
+pub(crate) fn scan_closing_code_fence(bytes: &[u8], fence_char: u8, n_fence_char: usize) -> Option<usize> {
     if bytes.is_empty() {
         return Some(0);
     }
@@ -798,11 +808,7 @@ pub(crate) fn scan_metadata_block(
 
 pub(crate) fn scan_blockquote_start(data: &[u8]) -> Option<usize> {
     if data.first().copied() == Some(b'>') {
-        let space = if data.get(1).copied() == Some(b' ') {
-            1
-        } else {
-            0
-        };
+        let space = if data.get(1).copied() == Some(b' ') { 1 } else { 0 };
         Some(1 + space)
     } else {
         None
@@ -850,10 +856,7 @@ fn parse_decimal(bytes: &[u8], limit: usize) -> (usize, usize) {
         .take_while(|&&b| is_digit(b))
         .try_fold((0, 0usize), |(count, acc), c| {
             let digit = usize::from(c - b'0');
-            match acc
-                .checked_mul(10)
-                .and_then(|ten_acc| ten_acc.checked_add(digit))
-            {
+            match acc.checked_mul(10).and_then(|ten_acc| ten_acc.checked_add(digit)) {
                 Some(number) => Ok((count + 1, number)),
                 // stop early on overflow
                 None => Err((count, acc)),
@@ -865,31 +868,28 @@ fn parse_decimal(bytes: &[u8], limit: usize) -> (usize, usize) {
 
 // returns (number of bytes, parsed hex)
 fn parse_hex(bytes: &[u8], limit: usize) -> (usize, usize) {
-    match bytes
-        .iter()
-        .take(limit)
-        .try_fold((0, 0usize), |(count, acc), c| {
-            let mut c = *c;
-            let digit = if c.is_ascii_digit() {
-                usize::from(c - b'0')
+    match bytes.iter().take(limit).try_fold((0, 0usize), |(count, acc), c| {
+        let mut c = *c;
+        let digit = if c.is_ascii_digit() {
+            usize::from(c - b'0')
+        } else {
+            // make lower case
+            c |= 0x20;
+            if (b'a'..=b'f').contains(&c) {
+                usize::from(c - b'a' + 10)
             } else {
-                // make lower case
-                c |= 0x20;
-                if (b'a'..=b'f').contains(&c) {
-                    usize::from(c - b'a' + 10)
-                } else {
-                    return Err((count, acc));
-                }
-            };
-            match acc
-                .checked_mul(16)
-                .and_then(|sixteen_acc| sixteen_acc.checked_add(digit))
-            {
-                Some(number) => Ok((count + 1, number)),
-                // stop early on overflow
-                None => Err((count, acc)),
+                return Err((count, acc));
             }
-        }) {
+        };
+        match acc
+            .checked_mul(16)
+            .and_then(|sixteen_acc| sixteen_acc.checked_add(digit))
+        {
+            Some(number) => Ok((count + 1, number)),
+            // stop early on overflow
+            None => Err((count, acc)),
+        }
+    }) {
         Ok(p) | Err(p) => p,
     }
 }
@@ -949,11 +949,7 @@ pub(crate) fn scan_wikilink_pipe(data: &str, start_ix: usize, len: usize) -> Opt
 // note: dest returned is raw, still needs to be unescaped
 // TODO: check that nested parens are really not allowed for refdefs
 // TODO(performance): this func should probably its own unescaping
-pub(crate) fn scan_link_dest(
-    data: &str,
-    start_ix: usize,
-    max_next: usize,
-) -> Option<(usize, &str)> {
+pub(crate) fn scan_link_dest(data: &str, start_ix: usize, max_next: usize) -> Option<(usize, &str)> {
     let bytes = &data.as_bytes()[start_ix..];
     let mut i = scan_ch(bytes, b'<');
 
@@ -1033,13 +1029,7 @@ fn scan_attribute(
     let ix_after_attribute = ix;
     ix = scan_whitespace_with_newline_handler_without_buffer(data, ix, newline_handler)?;
     if data.get(ix) == Some(&b'=') {
-        ix = scan_whitespace_with_newline_handler(
-            data,
-            ix_after_attribute,
-            newline_handler,
-            buffer,
-            buffer_ix,
-        )?;
+        ix = scan_whitespace_with_newline_handler(data, ix_after_attribute, newline_handler, buffer, buffer_ix)?;
         ix += 1;
         ix = scan_whitespace_with_newline_handler(data, ix, newline_handler, buffer, buffer_ix)?;
         ix = scan_attribute_value(data, ix, newline_handler, buffer, buffer_ix)?;
@@ -1394,8 +1384,8 @@ fn scan_email(text: &str, start_ix: usize) -> Option<(usize, CowStr<'_>)> {
         i += 1;
         match c {
             c if is_ascii_alphanumeric(c) => (),
-            b'.' | b'!' | b'#' | b'$' | b'%' | b'&' | b'\'' | b'*' | b'+' | b'/' | b'=' | b'?'
-            | b'^' | b'_' | b'`' | b'{' | b'|' | b'}' | b'~' | b'-' => (),
+            b'.' | b'!' | b'#' | b'$' | b'%' | b'&' | b'\'' | b'*' | b'+' | b'/' | b'=' | b'?' | b'^' | b'_' | b'`'
+            | b'{' | b'|' | b'}' | b'~' | b'-' => (),
             b'@' if i > 1 => break,
             _ => return None,
         }
@@ -1437,11 +1427,7 @@ fn scan_email(text: &str, start_ix: usize) -> Option<(usize, CowStr<'_>)> {
 
 /// Scan comment, declaration, or CDATA section, with initial "<!" already consumed.
 /// Returns byte offset on match.
-pub(crate) fn scan_inline_html_comment(
-    bytes: &[u8],
-    mut ix: usize,
-    scan_guard: &mut HtmlScanGuard,
-) -> Option<usize> {
+pub(crate) fn scan_inline_html_comment(bytes: &[u8], mut ix: usize, scan_guard: &mut HtmlScanGuard) -> Option<usize> {
     let c = *bytes.get(ix)?;
     ix += 1;
     match c {
@@ -1525,9 +1511,7 @@ mod test {
     use super::*;
     #[test]
     fn overflow_list() {
-        assert!(
-            scan_listitem(b"4444444444444444444444444444444444444444444444444444444444!").is_none()
-        );
+        assert!(scan_listitem(b"4444444444444444444444444444444444444444444444444444444444!").is_none());
     }
 
     #[test]

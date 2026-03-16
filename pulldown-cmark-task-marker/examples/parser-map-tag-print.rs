@@ -33,10 +33,7 @@ fn main() {
         "hello[^1]\n",
         "[^1]: my footnote\n",
     );
-    println!(
-        "\nParsing the following markdown string:\n{}\n",
-        markdown_input
-    );
+    println!("\nParsing the following markdown string:\n{}\n", markdown_input);
 
     // Set up the parser. We can treat is as any other iterator.
     // For each event, we print its details, such as the tag or string.
@@ -91,10 +88,9 @@ fn main() {
                     "Image link_type: {:?} url: {} title: {} id: {}",
                     link_type, dest_url, title, id
                 ),
-                Tag::Table(column_text_alignment_list) => println!(
-                    "Table column_text_alignment_list: {:?}",
-                    column_text_alignment_list
-                ),
+                Tag::Table(column_text_alignment_list) => {
+                    println!("Table column_text_alignment_list: {:?}", column_text_alignment_list)
+                }
                 Tag::TableHead => println!("TableHead (contains TableRow tags"),
                 Tag::TableRow => println!("TableRow (contains TableCell tags)"),
                 Tag::TableCell => println!("TableCell (contains inline tags)"),

@@ -22,11 +22,6 @@ exclude = [
 
 build = "build.rs"
 
-[[bin]]
-name = "pulldown-cmark"
-required-features = ["getopts"]
-doc = false
-
 [[example]]
 name = "event-filter"
 required-features = ["html"]

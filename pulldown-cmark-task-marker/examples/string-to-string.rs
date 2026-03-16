@@ -15,8 +15,7 @@ fn main() {
     html::push_html(&mut html_output, parser);
 
     // Check that the output is what we expected.
-    let expected_html: &str =
-        "<p>Hello world, this is a <del>complicated</del> <em>very simple</em> example.</p>\n";
+    let expected_html: &str = "<p>Hello world, this is a <del>complicated</del> <em>very simple</em> example.</p>\n";
     assert_eq!(expected_html, &html_output);
 
     // Write result to stdout.

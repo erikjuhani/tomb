@@ -28,6 +28,7 @@ pub fn test_markdown_html(
     if subscript {
         opts.insert(Options::ENABLE_SUBSCRIPT);
     }
+    opts.insert(Options::ENABLE_EXTENDED_TASK_MARKERS);
     opts.insert(Options::ENABLE_TASKLISTS);
     opts.insert(Options::ENABLE_GFM);
     if old_footnotes {

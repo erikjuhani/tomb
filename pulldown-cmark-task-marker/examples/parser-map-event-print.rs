@@ -2,10 +2,7 @@ use pulldown_cmark::{html, Event, Parser};
 
 fn main() {
     let markdown_input = "# Example Heading\nExample paragraph with **lorem** _ipsum_ text.";
-    println!(
-        "\nParsing the following markdown string:\n{}\n",
-        markdown_input
-    );
+    println!("\nParsing the following markdown string:\n{}\n", markdown_input);
 
     // Set up the parser. We can treat is as any other iterator.
     // For each event, we print its details, such as the tag or string.
@@ -23,6 +20,7 @@ fn main() {
             Event::InlineMath(s) => println!("Math: {:?}", s),
             Event::FootnoteReference(s) => println!("FootnoteReference: {:?}", s),
             Event::TaskListMarker(b) => println!("TaskListMarker: {:?}", b),
+            Event::ExtendedTaskListMarker(c) => println!("ExtendedTaskListMarker: {:?}", c),
             Event::SoftBreak => println!("SoftBreak"),
             Event::HardBreak => println!("HardBreak"),
             Event::Rule => println!("Rule"),

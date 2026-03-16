@@ -241,11 +241,7 @@ pub fn escape_html_body_text<W: StrWrite>(w: W, s: &str) -> Result<(), W::Error>
     }
 }
 
-fn escape_html_scalar<W: StrWrite>(
-    mut w: W,
-    s: &str,
-    table: &'static [u8; 256],
-) -> Result<(), W::Error> {
+fn escape_html_scalar<W: StrWrite>(mut w: W, s: &str, table: &'static [u8; 256]) -> Result<(), W::Error> {
     let bytes = s.as_bytes();
     let mut mark = 0;
     let mut i = 0;
@@ -275,11 +271,7 @@ mod simd {
 
     const VECTOR_SIZE: usize = size_of::<__m128i>();
 
-    pub(super) fn escape_html<W: StrWrite>(
-        mut w: W,
-        s: &str,
-        table: &'static [u8; 256],
-    ) -> Result<(), W::Error> {
+    pub(super) fn escape_html<W: StrWrite>(mut w: W, s: &str, table: &'static [u8; 256]) -> Result<(), W::Error> {
         // The SIMD accelerated code uses the PSHUFB instruction, which is part
         // of the SSSE3 instruction set. Further, we can only use this code if
         // the buffer is at least one VECTOR_SIZE in length to prevent reading
@@ -360,11 +352,7 @@ mod simd {
     /// Make sure to only call this when `bytes.len() >= 16`, undefined behaviour may
     /// occur otherwise.
     #[target_feature(enable = "ssse3")]
-    unsafe fn foreach_special_simd<E, F>(
-        bytes: &[u8],
-        mut offset: usize,
-        mut callback: F,
-    ) -> Result<(), E>
+    unsafe fn foreach_special_simd<E, F>(bytes: &[u8], mut offset: usize, mut callback: F) -> Result<(), E>
     where
         F: FnMut(usize) -> Result<(), E>,
     {

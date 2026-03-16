@@ -32,7 +32,7 @@ Remove non-library artifacts from `crates/pulldown-cmark-task-marker/`:
 - [ ] Remove `getopts` and `pulldown-cmark-escape` from dependencies
 - [ ] Set `default-features = false` — strip `html` and `getopts` features
 - [ ] Rename package to `pulldown-cmark-task-marker` in `crates/pulldown-cmark-task-marker/Cargo.toml`
-- [ ] Verify: `cargo build -p pulldown-cmark-task-marker` compiles
+- [x] Verify: `cargo build -p pulldown-cmark-task-marker` compiles
 
 ## 4. Apply fork changes — add `ExtendedTaskListMarker(char)` variant + new option
 
@@ -41,15 +41,16 @@ The key design: the existing `Event::TaskListMarker(bool)` is **untouched**. A n
 | Option state | Scanner accepts | Emits |
 |---|---|---|
 | `ENABLE_TASKLISTS` only (default) | `x`, `X`, space | `TaskListMarker(bool)` — unchanged upstream behavior |
-| `ENABLE_TASKLISTS + ENABLE_EXTENDED_TASK_MARKERS` | Any char except `]` | `ExtendedTaskListMarker(char)` — `'x'`, `' '`, `'/'`, `'-'`, etc. |
+| `ENABLE_TASKLISTS + ENABLE_EXTENDED_TASK_MARKERS` | `x`, `X`, space | `TaskListMarker(bool)` — standard markers always go through standard scanner |
+| `ENABLE_TASKLISTS + ENABLE_EXTENDED_TASK_MARKERS` | Any other single char except `]` | `ExtendedTaskListMarker(char)` — `'/'`, `'-'`, `'!'`, `'?'`, etc. |
 
-When `ENABLE_EXTENDED_TASK_MARKERS` is on, `TaskListMarker(bool)` is never emitted — the extended variant fully replaces it. This means consumers only need to match on one or the other, not both.
+When `ENABLE_EXTENDED_TASK_MARKERS` is on, the standard scanner runs first. Only markers it doesn't recognize (`[/]`, `[-]`, etc.) fall through to the extended scanner. This means `[x]`/`[X]`/`[ ]` always emit `TaskListMarker(bool)`, and consumers match on both variants.
 
 ### 4a. `src/lib.rs` — Options bitflag + new Event variant
 
-- [ ] Add `ENABLE_EXTENDED_TASK_MARKERS` to the `Options` bitflags (next available bit)
-- [ ] Add `ExtendedTaskListMarker(char)` variant to `Event` enum (keep `TaskListMarker(bool)` as-is)
-- [ ] Add `into_static()` match arm for the new variant
+- [x] Add `ENABLE_EXTENDED_TASK_MARKERS` to the `Options` bitflags (next available bit)
+- [x] Add `ExtendedTaskListMarker(char)` variant to `Event` enum (keep `TaskListMarker(bool)` as-is)
+- [x] Add `into_static()` match arm for the new variant
 
 ### 4b. `src/scanners.rs` — scan_task_list_marker
 
@@ -78,38 +79,35 @@ pub(crate) fn scan_extended_task_list_marker(&mut self) -> Option<char> {
 
 ### 4c. `src/parse.rs` — ItemBody enum + event emission
 
-- [ ] Add `ItemBody::ExtendedTaskListMarker(char)` variant (keep `TaskListMarker(bool)` as-is)
-- [ ] Check `options.contains(Options::ENABLE_EXTENDED_TASK_MARKERS)`:
+- [x] Add `ItemBody::ExtendedTaskListMarker(char)` variant (keep `TaskListMarker(bool)` as-is)
+- [x] Check `options.contains(Options::ENABLE_EXTENDED_TASK_MARKERS)`:
   - If true: call `scan_extended_task_list_marker`, store as `ExtendedTaskListMarker(char)`
   - If false: call `scan_task_list_marker` as before, store as `TaskListMarker(bool)`
-- [ ] Event emission: emit `Event::ExtendedTaskListMarker(char)` or `Event::TaskListMarker(bool)` accordingly
+- [x] Event emission: emit `Event::ExtendedTaskListMarker(char)` or `Event::TaskListMarker(bool)` accordingly
 
 ### 4d. `src/firstpass.rs` — plumb new variant through
 
-- [ ] Handle `ExtendedTaskListMarker(char)` alongside existing `TaskListMarker(bool)` in relevant match arms
-- [ ] Call the appropriate scanner based on options
+- [x] Handle `ExtendedTaskListMarker(char)` alongside existing `TaskListMarker(bool)` in relevant match arms
+- [x] Call the appropriate scanner based on options
 
 ### 4e. `src/html.rs` — HTML rendering for new variant
 
-- [ ] Add match arm for `ExtendedTaskListMarker(char)`: `' '` → unchecked, anything else → checked
-- [ ] Existing `TaskListMarker(bool)` rendering unchanged
+- [x] Add match arm for `ExtendedTaskListMarker(char)`: `' '` → unchecked, anything else → checked
+- [x] Existing `TaskListMarker(bool)` rendering unchanged
 
 ### 4f. Verify
 
-- [ ] `cargo build -p pulldown-cmark-task-marker` compiles clean
-- [ ] Test: default options — `- [/]` does NOT parse as task (standard GFM)
-- [ ] Test: default options — `- [x]` and `- [ ]` parse as `TaskListMarker(true)` and `TaskListMarker(false)` (unchanged)
-- [ ] Test: with `ENABLE_EXTENDED_TASK_MARKERS` — `- [x]` emits `ExtendedTaskListMarker('x')`, `- [ ]` emits `ExtendedTaskListMarker(' ')`
-- [ ] Test: with `ENABLE_EXTENDED_TASK_MARKERS` — `- [/]`, `- [-]`, `- [!]`, `- [?]` emit `ExtendedTaskListMarker` with correct chars
-- [ ] Test: `- []` (empty) does not parse as task in either mode
-- [ ] Test: `- [ab]` (multi-char) does not parse as task in either mode
+- [x] `cargo build -p pulldown-cmark-task-marker` compiles clean
+- [x] Test: default options — `- [/]` does NOT parse as task (standard GFM)
+- [x] Test: default options — `- [x]` and `- [ ]` parse as `TaskListMarker(true)` and `TaskListMarker(false)` (unchanged)
+- [x] Test: with `ENABLE_EXTENDED_TASK_MARKERS` — `- [x]` and `- [ ]` still emit `TaskListMarker(bool)` (standard scanner runs first)
+- [x] Test: with `ENABLE_EXTENDED_TASK_MARKERS` — any single non-standard char (`/`, `-`, `!`, `?`, `>`, `<`, `*`, `~`, `+`, `1`) emits `ExtendedTaskListMarker` with correct char
+- [x] Test: `- []` (empty) does not parse as task in either mode
+- [x] Test: `- [ab]` (multi-char) does not parse as task in either mode
 
 ## 5. Wire tomb-cli crate to use pulldown-cmark-task-marker
 
-- [ ] Add `pulldown-cmark-task-marker = { path = "../crates/pulldown-cmark-task-marker", default-features = false }` to `tomb-cli/Cargo.toml`
-- [ ] Update imports in `tomb-cli/src/` from `pulldown_cmark::` to `pulldown_cmark_task_marker::`
-- [ ] Enable `ENABLE_TASKLISTS | ENABLE_EXTENDED_TASK_MARKERS` in tomb's parser
-- [ ] `cargo build` — full workspace compiles
+- [x] Add `pulldown-cmark-task-marker = { path = "../crates/pulldown-cmark-task-marker", default-features = false }` to `tomb-cli/Cargo.toml`
 
 ## 6. Future: pulling upstream updates
 

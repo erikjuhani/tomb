@@ -68,10 +68,7 @@ where
     I: Iterator<Item = (Event<'a>, Range<usize>)>,
 {
     pub fn new(iter: I) -> Self {
-        Self {
-            iter,
-            last_event: None,
-        }
+        Self { iter, last_event: None }
     }
 }
 
@@ -83,10 +80,7 @@ where
 
     fn next(&mut self) -> Option<Self::Item> {
         match (self.last_event.take(), self.iter.next()) {
-            (
-                Some((Event::Text(last_text), last_offset)),
-                Some((Event::Text(next_text), next_offset)),
-            ) => {
+            (Some((Event::Text(last_text), last_offset)), Some((Event::Text(next_text), next_offset))) => {
                 // We need to start merging consecutive text events together into one
                 let mut string_buf: String = last_text.into_string();
                 string_buf.push_str(&next_text);
@@ -105,10 +99,7 @@ where
                                 // Discard text event(s) altogether if there is no text
                                 break self.next();
                             } else {
-                                break Some((
-                                    Event::Text(CowStr::Boxed(string_buf.into_boxed_str())),
-                                    offset,
-                                ));
+                                break Some((Event::Text(CowStr::Boxed(string_buf.into_boxed_str())), offset));
                             }
                         }
                     }
@@ -145,10 +136,7 @@ mod test {
 "#;
         let parser = TextMergeStream::new(Parser::new(source));
         let text_events: Vec<_> = parser.filter(|e| matches!(e, Event::Text(_))).collect();
-        assert_eq!(
-            text_events,
-            [Event::Text("first line\nsecond line\n".into())]
-        );
+        assert_eq!(text_events, [Event::Text("first line\nsecond line\n".into())]);
     }
 
     #[test]
@@ -158,23 +146,13 @@ mod test {
     second line
 "#;
         let parser = TextMergeWithOffset::new(Parser::new(source).into_offset_iter());
-        let text_events: Vec<_> = parser
-            .filter(|e| matches!(e, (Event::Text(_), _)))
-            .collect();
-        assert_eq!(
-            text_events,
-            [(Event::Text("first line\nsecond line\n".into()), 5..32)]
-        );
+        let text_events: Vec<_> = parser.filter(|e| matches!(e, (Event::Text(_), _))).collect();
+        assert_eq!(text_events, [(Event::Text("first line\nsecond line\n".into()), 5..32)]);
     }
 
     #[test]
     fn text_merge_empty_is_discarded() {
-        let events = [
-            Event::Rule,
-            Event::Text("".into()),
-            Event::Text("".into()),
-            Event::Rule,
-        ];
+        let events = [Event::Rule, Event::Text("".into()), Event::Text("".into()), Event::Rule];
         let result: Vec<_> = TextMergeStream::new(events.into_iter()).collect();
         assert_eq!(result, [Event::Rule, Event::Rule]);
     }

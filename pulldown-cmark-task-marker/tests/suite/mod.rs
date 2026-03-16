@@ -9,6 +9,7 @@ mod footnotes;
 mod gfm_strikethrough;
 mod gfm_table;
 mod gfm_tasklist;
+mod extended_task_markers;
 mod heading_attrs;
 mod math;
 mod metadata_blocks;

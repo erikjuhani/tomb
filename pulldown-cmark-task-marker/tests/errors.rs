@@ -75,9 +75,7 @@ fn test_fuzzer_input_10() {
 
 #[test]
 fn test_fuzzer_input_11() {
-    parse_all_options(
-        "[[\u{c}\u{c}   \t\n   \u{c}\u{c}\u{c}\u{c}\u{c}\u{c}\u{c}\u{c}\u{c}       {}\n-\r\u{e}",
-    );
+    parse_all_options("[[\u{c}\u{c}   \t\n   \u{c}\u{c}\u{c}\u{c}\u{c}\u{c}\u{c}\u{c}\u{c}       {}\n-\r\u{e}");
 }
 
 #[test]

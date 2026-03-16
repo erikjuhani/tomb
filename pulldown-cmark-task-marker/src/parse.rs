@@ -34,8 +34,7 @@ use crate::scanners::*;
 use crate::strings::CowStr;
 use crate::tree::{Tree, TreeIndex};
 use crate::{
-    Alignment, BlockQuoteKind, CodeBlockKind, Event, HeadingLevel, LinkType, MetadataBlockKind,
-    Options, Tag, TagEnd,
+    Alignment, BlockQuoteKind, CodeBlockKind, Event, HeadingLevel, LinkType, MetadataBlockKind, Options, Tag, TagEnd,
 };
 
 // Allowing arbitrary depth nested parentheses inside link destinations
@@ -81,6 +80,7 @@ pub(crate) enum ItemBody {
     Image(LinkIndex),
     FootnoteReference(CowIndex),
     TaskListMarker(bool), // true for checked
+    ExtendedTaskListMarker(char),
 
     // These are also inline items.
     InlineHtml,
@@ -164,6 +164,7 @@ impl ItemBody {
                 | Image(..)
                 | FootnoteReference(..)
                 | TaskListMarker(..)
+                | ExtendedTaskListMarker(..)
                 | InlineHtml
                 | OwnedInlineHtml(..)
                 | SynthesizeText(..)
@@ -224,10 +225,7 @@ impl<'input, F> std::fmt::Debug for Parser<'input, F> {
         f.debug_struct("Parser")
             .field("text", &self.text)
             .field("options", &self.options)
-            .field(
-                "broken_link_callback",
-                &self.broken_link_callback.as_ref().map(|_| ..),
-            )
+            .field("broken_link_callback", &self.broken_link_callback.as_ref().map(|_| ..))
             .finish()
     }
 }
@@ -263,11 +261,7 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
     /// the provided callback will be called with the reference name,
     /// and the returned pair will be used as the link URL and title if it is not
     /// `None`.
-    pub fn new_with_broken_link_callback(
-        text: &'input str,
-        options: Options,
-        broken_link_callback: Option<F>,
-    ) -> Self {
+    pub fn new_with_broken_link_callback(text: &'input str, options: Options, broken_link_callback: Option<F>) -> Self {
         let (mut tree, allocs) = run_first_pass(text, options);
         tree.reset();
         let inline_stack = Default::default();
@@ -332,11 +326,7 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
             .get(link_label.as_ref())
             .map(|matching_def| {
                 // found a matching definition!
-                let title = matching_def
-                    .title
-                    .as_ref()
-                    .cloned()
-                    .unwrap_or_else(|| "".into());
+                let title = matching_def.title.as_ref().cloned().unwrap_or_else(|| "".into());
                 let url = matching_def.dest.clone();
                 (link_type, url, title)
             })
@@ -361,9 +351,7 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
         // Limit expansion from link references.
         // This isn't a problem for footnotes, because multiple references to the same one
         // reuse the same node, but links/images get their HREF/SRC copied.
-        self.link_ref_expansion_limit = self
-            .link_ref_expansion_limit
-            .saturating_sub(url.len() + title.len());
+        self.link_ref_expansion_limit = self.link_ref_expansion_limit.saturating_sub(url.len() + title.len());
 
         Some((link_type, url, title))
     }
@@ -410,9 +398,7 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
                                 backslash_escaped: false,
                             },
                         });
-                        let link_ix =
-                            self.allocs
-                                .allocate_link(link_type, uri, "".into(), "".into());
+                        let link_ix = self.allocs.allocate_link(link_type, uri, "".into(), "".into());
                         self.tree[cur_ix].item.body = ItemBody::Link(link_ix);
                         self.tree[cur_ix].item.end = ix;
                         self.tree[cur_ix].next = node;
@@ -425,19 +411,13 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
                         continue;
                     } else {
                         let inline_html = next.and_then(|next_ix| {
-                            self.scan_inline_html(
-                                block_text.as_bytes(),
-                                self.tree[next_ix].item.start,
-                            )
+                            self.scan_inline_html(block_text.as_bytes(), self.tree[next_ix].item.start)
                         });
                         if let Some((span, ix)) = inline_html {
                             let node = scan_nodes_to_ix(&self.tree, next, ix);
                             self.tree[cur_ix].item.body = if !span.is_empty() {
-                                let converted_string =
-                                    String::from_utf8(span).expect("invalid utf8");
-                                ItemBody::OwnedInlineHtml(
-                                    self.allocs.allocate_cow(converted_string.into()),
-                                )
+                                let converted_string = String::from_utf8(span).expect("invalid utf8");
+                                ItemBody::OwnedInlineHtml(self.allocs.allocate_cow(converted_string.into()))
                             } else {
                                 ItemBody::InlineHtml
                             };
@@ -446,8 +426,7 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
                             prev = cur;
                             cur = node;
                             if let Some(node_ix) = cur {
-                                self.tree[node_ix].item.start =
-                                    max(self.tree[node_ix].item.start, ix);
+                                self.tree[node_ix].item.start = max(self.tree[node_ix].item.start, ix);
                             }
                             continue;
                         }
@@ -474,8 +453,7 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
                     let result = if self.math_delims.is_populated() {
                         // we have previously scanned all math environment delimiters,
                         // so we can reuse that work
-                        self.math_delims
-                            .find(&self.tree, cur_ix, is_display, brace_context)
+                        self.math_delims.find(&self.tree, cur_ix, is_display, brace_context)
                     } else {
                         // we haven't previously scanned all math delimiters,
                         // so walk the AST
@@ -490,21 +468,14 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
                             if let ItemBody::MaybeMath(_can_open, can_close, delim_brace_context) =
                                 self.tree[scan_ix].item.body
                             {
-                                let delim_is_display =
-                                    self.tree[scan_ix].next.map_or(false, |next_ix| {
-                                        matches!(
-                                            self.tree[next_ix].item.body,
-                                            ItemBody::MaybeMath(
-                                                _can_open,
-                                                _can_close,
-                                                _brace_context
-                                            )
-                                        )
-                                    });
+                                let delim_is_display = self.tree[scan_ix].next.map_or(false, |next_ix| {
+                                    matches!(
+                                        self.tree[next_ix].item.body,
+                                        ItemBody::MaybeMath(_can_open, _can_close, _brace_context)
+                                    )
+                                });
                                 if !invalid && delim_brace_context == brace_context {
-                                    if (!is_display && can_close)
-                                        || (is_display && delim_is_display)
-                                    {
+                                    if (!is_display && can_close) || (is_display && delim_is_display) {
                                         // This will skip ahead past everything we
                                         // just inserted. Needed for correctness to
                                         // ensure that a new scan is done after this item.
@@ -516,12 +487,8 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
                                         invalid = true;
                                     }
                                 }
-                                self.math_delims.insert(
-                                    delim_is_display,
-                                    delim_brace_context,
-                                    scan_ix,
-                                    can_close,
-                                );
+                                self.math_delims
+                                    .insert(delim_is_display, delim_brace_context, scan_ix, can_close);
                             }
                             scan = self.tree[scan_ix].next;
                         }
@@ -562,15 +529,9 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
                     } else {
                         // we haven't previously scanned all codeblock delimiters,
                         // so walk the AST
-                        let mut scan = if search_count > 0 {
-                            self.tree[cur_ix].next
-                        } else {
-                            None
-                        };
+                        let mut scan = if search_count > 0 { self.tree[cur_ix].next } else { None };
                         while let Some(scan_ix) = scan {
-                            if let ItemBody::MaybeCode(delim_count, _) =
-                                self.tree[scan_ix].item.body
-                            {
+                            if let ItemBody::MaybeCode(delim_count, _) = self.tree[scan_ix].item.body {
                                 if search_count == delim_count {
                                     self.make_code_span(cur_ix, scan_ix, preceded_by_backslash);
                                     self.code_delims.clear();
@@ -634,9 +595,7 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
                     if self.options.contains(Options::ENABLE_WIKILINKS)
                         && self.tree[cur_ix]
                             .next
-                            .map(|ix| {
-                                matches!(self.tree[ix].item.body, ItemBody::MaybeLinkClose(..))
-                            })
+                            .map(|ix| matches!(self.tree[ix].item.body, ItemBody::MaybeLinkClose(..)))
                             .unwrap_or(false)
                     {
                         if let Some(node) = self.handle_wikilink(block_text, cur_ix, prev) {
@@ -648,10 +607,7 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
                         // skip rendering if already in a link, unless its an
                         // image
                         if tos.ty != LinkStackTy::Image
-                            && matches!(
-                                self.tree[self.tree.peek_up().unwrap()].item.body,
-                                ItemBody::Link(..)
-                            )
+                            && matches!(self.tree[self.tree.peek_up().unwrap()].item.body, ItemBody::Link(..))
                         {
                             continue;
                         }
@@ -668,9 +624,7 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
                             }
                             cur = Some(tos.node);
                             cur_ix = tos.node;
-                            let link_ix =
-                                self.allocs
-                                    .allocate_link(LinkType::Inline, url, title, "".into());
+                            let link_ix = self.allocs.allocate_link(LinkType::Inline, url, title, "".into());
                             self.tree[cur_ix].item.body = if tos.ty == LinkStackTy::Image {
                                 ItemBody::Image(link_ix)
                             } else {
@@ -680,8 +634,7 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
                             self.tree[cur_ix].next = next_node;
                             self.tree[cur_ix].item.end = next_ix;
                             if let Some(next_node_ix) = next_node {
-                                self.tree[next_node_ix].item.start =
-                                    max(self.tree[next_node_ix].item.start, next_ix);
+                                self.tree[next_node_ix].item.start = max(self.tree[next_node_ix].item.start, next_ix);
                             }
 
                             if tos.ty == LinkStackTy::Link {
@@ -690,8 +643,7 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
                         } else {
                             // ok, so its not an inline link. maybe it is a reference
                             // to a defined link?
-                            let scan_result =
-                                scan_reference(&self.tree, block_text, next, self.options);
+                            let scan_result = scan_reference(&self.tree, block_text, next, self.options);
                             let (node_after_link, link_type) = match scan_result {
                                 // [label][reference]
                                 RefScan::LinkLabel(_, end_ix) => {
@@ -699,15 +651,13 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
                                     // so that we can skip it on future iterations in case
                                     // it fails in this one. In particular, we won't call
                                     // the broken link callback twice on one reference.
-                                    let reference_close_node = if let Some(node) =
-                                        scan_nodes_to_ix(&self.tree, next, end_ix - 1)
-                                    {
-                                        node
-                                    } else {
-                                        continue;
-                                    };
-                                    self.tree[reference_close_node].item.body =
-                                        ItemBody::MaybeLinkClose(false);
+                                    let reference_close_node =
+                                        if let Some(node) = scan_nodes_to_ix(&self.tree, next, end_ix - 1) {
+                                            node
+                                        } else {
+                                            continue;
+                                        };
+                                    self.tree[reference_close_node].item.body = ItemBody::MaybeLinkClose(false);
                                     let next_node = self.tree[reference_close_node].next;
 
                                     (next_node, LinkType::Reference)
@@ -737,39 +687,26 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
 
                             // (label, source_ix end)
                             let label: Option<(ReferenceLabel<'input>, usize)> = match scan_result {
-                                RefScan::LinkLabel(l, end_ix) => {
-                                    Some((ReferenceLabel::Link(l), end_ix))
-                                }
-                                RefScan::Collapsed(..)
-                                | RefScan::Failed
-                                | RefScan::UnexpectedFootnote => {
+                                RefScan::LinkLabel(l, end_ix) => Some((ReferenceLabel::Link(l), end_ix)),
+                                RefScan::Collapsed(..) | RefScan::Failed | RefScan::UnexpectedFootnote => {
                                     // No label? maybe it is a shortcut reference
                                     let label_start = self.tree[tos.node].item.end - 1;
                                     let label_end = self.tree[cur_ix].item.end;
-                                    scan_link_label(
-                                        &self.tree,
-                                        &self.text[label_start..label_end],
-                                        self.options,
-                                    )
-                                    .map(|(ix, label)| (label, label_start + ix))
-                                    .filter(|(_, end)| *end == label_end)
+                                    scan_link_label(&self.tree, &self.text[label_start..label_end], self.options)
+                                        .map(|(ix, label)| (label, label_start + ix))
+                                        .filter(|(_, end)| *end == label_end)
                                 }
                             };
 
                             let id = match &label {
-                                Some(
-                                    (ReferenceLabel::Link(l), _) | (ReferenceLabel::Footnote(l), _),
-                                ) => l.clone(),
+                                Some((ReferenceLabel::Link(l), _) | (ReferenceLabel::Footnote(l), _)) => l.clone(),
                                 None => "".into(),
                             };
 
                             // see if it's a footnote reference
                             if let Some((ReferenceLabel::Footnote(l), end)) = label {
                                 let footref = self.allocs.allocate_cow(l);
-                                if let Some(def) = self
-                                    .allocs
-                                    .footdefs
-                                    .get_mut(self.allocs.cows[footref.0].to_owned())
+                                if let Some(def) = self.allocs.footdefs.get_mut(self.allocs.cows[footref.0].to_owned())
                                 {
                                     def.use_count += 1;
                                 }
@@ -781,12 +718,9 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
                                     let footnote_ix = if tos.ty == LinkStackTy::Image {
                                         self.tree[tos.node].next = Some(cur_ix);
                                         self.tree[tos.node].child = None;
-                                        self.tree[tos.node].item.body =
-                                            ItemBody::SynthesizeChar('!');
-                                        self.tree[cur_ix].item.start =
-                                            self.tree[tos.node].item.start + 1;
-                                        self.tree[tos.node].item.end =
-                                            self.tree[tos.node].item.start + 1;
+                                        self.tree[tos.node].item.body = ItemBody::SynthesizeChar('!');
+                                        self.tree[cur_ix].item.start = self.tree[tos.node].item.start + 1;
+                                        self.tree[tos.node].item.end = self.tree[tos.node].item.start + 1;
                                         cur_ix
                                     } else {
                                         tos.node
@@ -796,8 +730,7 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
                                     // which footnotes don't support.
                                     self.tree[footnote_ix].next = next;
                                     self.tree[footnote_ix].child = None;
-                                    self.tree[footnote_ix].item.body =
-                                        ItemBody::FootnoteReference(footref);
+                                    self.tree[footnote_ix].item.body = ItemBody::FootnoteReference(footref);
                                     self.tree[footnote_ix].item.end = end;
                                     prev = Some(footnote_ix);
                                     cur = next;
@@ -805,17 +738,13 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
                                     continue;
                                 }
                             } else if let Some((ReferenceLabel::Link(link_label), end)) = label {
-                                if let Some((def_link_type, url, title)) = self
-                                    .fetch_link_type_url_title(
-                                        link_label,
-                                        (self.tree[tos.node].item.start)..end,
-                                        link_type,
-                                    )
-                                {
-                                    let link_ix =
-                                        self.allocs.allocate_link(def_link_type, url, title, id);
-                                    self.tree[tos.node].item.body = if tos.ty == LinkStackTy::Image
-                                    {
+                                if let Some((def_link_type, url, title)) = self.fetch_link_type_url_title(
+                                    link_label,
+                                    (self.tree[tos.node].item.start)..end,
+                                    link_type,
+                                ) {
+                                    let link_ix = self.allocs.allocate_link(def_link_type, url, title, id);
+                                    self.tree[tos.node].item.body = if tos.ty == LinkStackTy::Image {
                                         ItemBody::Image(link_ix)
                                     } else {
                                         ItemBody::Link(link_ix)
@@ -965,10 +894,7 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
                     let c = self.text.as_bytes()[self.tree[cur_ix].item.start];
                     let both = can_open && can_close;
                     if can_close {
-                        while let Some(el) =
-                            self.inline_stack
-                                .find_match(&mut self.tree, c, run_length, both)
-                        {
+                        while let Some(el) = self.inline_stack.find_match(&mut self.tree, c, run_length, both) {
                             // have a match!
                             if let Some(prev_ix) = prev {
                                 self.tree[prev_ix].next = None;
@@ -997,10 +923,7 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
                                     } else {
                                         if self.options.contains(Options::ENABLE_SUBSCRIPT) {
                                             ItemBody::Subscript
-                                        } else if self
-                                            .options
-                                            .contains(Options::ENABLE_STRIKETHROUGH)
-                                        {
+                                        } else if self.options.contains(Options::ENABLE_STRIKETHROUGH) {
                                             ItemBody::Strikethrough
                                         } else {
                                             ItemBody::Text {
@@ -1138,11 +1061,7 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
             *ix += scan_while(&underlying.as_bytes()[*ix..], is_ascii_whitespace_no_nl);
             if let Some(bl) = scan_eol(&underlying.as_bytes()[*ix..]) {
                 *ix += bl;
-                *ix += skip_container_prefixes(
-                    &self.tree,
-                    &underlying.as_bytes()[*ix..],
-                    self.options,
-                );
+                *ix += skip_container_prefixes(&self.tree, &underlying.as_bytes()[*ix..], self.options);
             }
             *ix += scan_while(&underlying.as_bytes()[*ix..], is_ascii_whitespace_no_nl);
         };
@@ -1297,10 +1216,7 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
                 buf.push_str(&spanned_text[start_ix..ix]);
                 ix += skip_container_prefixes(&self.tree, &spanned_bytes[ix..], self.options);
                 start_ix = ix;
-            } else if c == b'\\'
-                && spanned_bytes.get(ix + 1) == Some(&b'|')
-                && self.tree.is_in_table()
-            {
+            } else if c == b'\\' && spanned_bytes.get(ix + 1) == Some(&b'|') && self.tree.is_in_table() {
                 let buf = buf.get_or_insert_with(|| String::with_capacity(spanned_bytes.len()));
                 buf.push_str(&spanned_text[start_ix..ix]);
                 buf.push('|');
@@ -1344,10 +1260,7 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
                 ix += 1;
                 ix += skip_container_prefixes(&self.tree, &spanned_bytes[ix..], self.options);
                 start_ix = ix;
-            } else if c == b'\\'
-                && spanned_bytes.get(ix + 1) == Some(&b'|')
-                && self.tree.is_in_table()
-            {
+            } else if c == b'\\' && spanned_bytes.get(ix + 1) == Some(&b'|') && self.tree.is_in_table() {
                 let buf = buf.get_or_insert_with(|| String::with_capacity(spanned_bytes.len()));
                 buf.push_str(&spanned_text[start_ix..ix]);
                 buf.push('|');
@@ -1437,11 +1350,7 @@ impl<'input, F: BrokenLinkCallback<'input>> Parser<'input, F> {
 }
 
 /// Returns number of containers scanned.
-pub(crate) fn scan_containers(
-    tree: &Tree<Item>,
-    line_start: &mut LineStart<'_>,
-    options: Options,
-) -> usize {
+pub(crate) fn scan_containers(tree: &Tree<Item>, line_start: &mut LineStart<'_>, options: Options) -> usize {
     let mut i = 0;
     for &node_ix in tree.walk_spine() {
         match tree[node_ix].item.body {
@@ -1490,8 +1399,7 @@ impl Tree<Item> {
     pub(crate) fn append_text(&mut self, start: usize, end: usize, backslash_escaped: bool) {
         if end > start {
             if let Some(ix) = self.cur() {
-                if matches!(self[ix].item.body, ItemBody::Text { .. }) && self[ix].item.end == start
-                {
+                if matches!(self[ix].item.body, ItemBody::Text { .. }) && self[ix].item.end == start {
                     self[ix].item.end = end;
                     return;
                 }
@@ -1578,20 +1486,14 @@ impl InlineStack {
             if both {
                 mod3_lower
             } else {
-                min(
-                    mod3_lower,
-                    self.lower_bounds[InlineStack::UNDERSCORE_NOT_BOTH],
-                )
+                min(mod3_lower, self.lower_bounds[InlineStack::UNDERSCORE_NOT_BOTH])
             }
         } else if c == b'*' {
             let mod3_lower = self.lower_bounds[InlineStack::ASTERISK_BASE + count % 3];
             if both {
                 mod3_lower
             } else {
-                min(
-                    mod3_lower,
-                    self.lower_bounds[InlineStack::ASTERISK_NOT_BOTH],
-                )
+                min(mod3_lower, self.lower_bounds[InlineStack::ASTERISK_NOT_BOTH])
             }
         } else {
             self.lower_bounds[InlineStack::TILDES]
@@ -1624,27 +1526,14 @@ impl InlineStack {
         }
     }
 
-    fn find_match(
-        &mut self,
-        tree: &mut Tree<Item>,
-        c: u8,
-        run_length: usize,
-        both: bool,
-    ) -> Option<InlineEl> {
+    fn find_match(&mut self, tree: &mut Tree<Item>, c: u8, run_length: usize, both: bool) -> Option<InlineEl> {
         let lowerbound = min(self.stack.len(), self.get_lowerbound(c, run_length, both));
-        let res = self.stack[lowerbound..]
-            .iter()
-            .cloned()
-            .enumerate()
-            .rfind(|(_, el)| {
-                if c == b'~' && run_length != el.run_length {
-                    return false;
-                }
-                el.c == c
-                    && (!both && !el.both
-                        || (run_length + el.run_length) % 3 != 0
-                        || run_length % 3 == 0)
-            });
+        let res = self.stack[lowerbound..].iter().cloned().enumerate().rfind(|(_, el)| {
+            if c == b'~' && run_length != el.run_length {
+                return false;
+            }
+            el.c == c && (!both && !el.both || (run_length + el.run_length) % 3 != 0 || run_length % 3 == 0)
+        });
 
         if let Some((matching_ix, matching_el)) = res {
             let matching_ix = matching_ix + lowerbound;
@@ -1687,11 +1576,7 @@ enum RefScan<'a> {
 
 /// Skips forward within a block to a node which spans (ends inclusive) the given
 /// index into the source.
-fn scan_nodes_to_ix(
-    tree: &Tree<Item>,
-    mut node: Option<TreeIndex>,
-    ix: usize,
-) -> Option<TreeIndex> {
+fn scan_nodes_to_ix(tree: &Tree<Item>, mut node: Option<TreeIndex>, ix: usize) -> Option<TreeIndex> {
     while let Some(node_ix) = node {
         if tree[node_ix].item.end <= ix {
             node = tree[node_ix].next;
@@ -1714,32 +1599,21 @@ fn scan_link_label<'text>(
         return None;
     }
     let linebreak_handler = |bytes: &[u8]| Some(skip_container_prefixes(tree, bytes, options));
-    if options.contains(Options::ENABLE_FOOTNOTES)
-        && b'^' == bytes[1]
-        && bytes.get(2) != Some(&b']')
-    {
+    if options.contains(Options::ENABLE_FOOTNOTES) && b'^' == bytes[1] && bytes.get(2) != Some(&b']') {
         let linebreak_handler: &dyn Fn(&[u8]) -> Option<usize> = if options.has_gfm_footnotes() {
             &|_| None
         } else {
             &linebreak_handler
         };
-        if let Some((byte_index, cow)) =
-            scan_link_label_rest(&text[2..], linebreak_handler, tree.is_in_table())
-        {
+        if let Some((byte_index, cow)) = scan_link_label_rest(&text[2..], linebreak_handler, tree.is_in_table()) {
             return Some((byte_index + 2, ReferenceLabel::Footnote(cow)));
         }
     }
-    let (byte_index, cow) =
-        scan_link_label_rest(&text[1..], &linebreak_handler, tree.is_in_table())?;
+    let (byte_index, cow) = scan_link_label_rest(&text[1..], &linebreak_handler, tree.is_in_table())?;
     Some((byte_index + 1, ReferenceLabel::Link(cow)))
 }
 
-fn scan_reference<'b>(
-    tree: &Tree<Item>,
-    text: &'b str,
-    cur: Option<TreeIndex>,
-    options: Options,
-) -> RefScan<'b> {
+fn scan_reference<'b>(tree: &Tree<Item>, text: &'b str, cur: Option<TreeIndex>, options: Options) -> RefScan<'b> {
     let cur_ix = match cur {
         None => return RefScan::Failed,
         Some(cur_ix) => cur_ix,
@@ -1887,13 +1761,7 @@ impl MathDelims {
         }
     }
 
-    fn insert(
-        &mut self,
-        delim_is_display: bool,
-        brace_context: u8,
-        ix: TreeIndex,
-        can_close: bool,
-    ) {
+    fn insert(&mut self, delim_is_display: bool, brace_context: u8, ix: TreeIndex, can_close: bool) {
         self.inner
             .entry(brace_context)
             .or_default()
@@ -1911,9 +1779,7 @@ impl MathDelims {
         is_display: bool,
         brace_context: u8,
     ) -> Option<TreeIndex> {
-        while let Some((ix, can_close, delim_is_display)) =
-            self.inner.get_mut(&brace_context)?.pop_front()
-        {
+        while let Some((ix, can_close, delim_is_display)) = self.inner.get_mut(&brace_context)?.pop_front() {
             if ix <= open_ix || (is_display && tree[open_ix].next == Some(ix)) {
                 continue;
             }
@@ -2021,13 +1887,7 @@ impl<'a> Allocations<'a> {
         CowIndex(ix)
     }
 
-    pub fn allocate_link(
-        &mut self,
-        ty: LinkType,
-        url: CowStr<'a>,
-        title: CowStr<'a>,
-        id: CowStr<'a>,
-    ) -> LinkIndex {
+    pub fn allocate_link(&mut self, ty: LinkType, url: CowStr<'a>, title: CowStr<'a>, id: CowStr<'a>) -> LinkIndex {
         let ix = self.links.len();
         self.links.push((ty, url, title, id));
         LinkIndex(ix)
@@ -2112,29 +1972,20 @@ pub(crate) struct HtmlScanGuard {
 /// See [Parser::new_with_broken_link_callback].
 /// Automatically implemented for closures with the appropriate signature.
 pub trait BrokenLinkCallback<'input> {
-    fn handle_broken_link(
-        &mut self,
-        link: BrokenLink<'input>,
-    ) -> Option<(CowStr<'input>, CowStr<'input>)>;
+    fn handle_broken_link(&mut self, link: BrokenLink<'input>) -> Option<(CowStr<'input>, CowStr<'input>)>;
 }
 
 impl<'input, T> BrokenLinkCallback<'input> for T
 where
     T: FnMut(BrokenLink<'input>) -> Option<(CowStr<'input>, CowStr<'input>)>,
 {
-    fn handle_broken_link(
-        &mut self,
-        link: BrokenLink<'input>,
-    ) -> Option<(CowStr<'input>, CowStr<'input>)> {
+    fn handle_broken_link(&mut self, link: BrokenLink<'input>) -> Option<(CowStr<'input>, CowStr<'input>)> {
         self(link)
     }
 }
 
 impl<'input> BrokenLinkCallback<'input> for Box<dyn BrokenLinkCallback<'input>> {
-    fn handle_broken_link(
-        &mut self,
-        link: BrokenLink<'input>,
-    ) -> Option<(CowStr<'input>, CowStr<'input>)> {
+    fn handle_broken_link(&mut self, link: BrokenLink<'input>) -> Option<(CowStr<'input>, CowStr<'input>)> {
         (**self).handle_broken_link(link)
     }
 }
@@ -2144,10 +1995,7 @@ impl<'input> BrokenLinkCallback<'input> for Box<dyn BrokenLinkCallback<'input>> 
 pub struct DefaultBrokenLinkCallback;
 
 impl<'input> BrokenLinkCallback<'input> for DefaultBrokenLinkCallback {
-    fn handle_broken_link(
-        &mut self,
-        _link: BrokenLink<'input>,
-    ) -> Option<(CowStr<'input>, CowStr<'input>)> {
+    fn handle_broken_link(&mut self, _link: BrokenLink<'input>) -> Option<(CowStr<'input>, CowStr<'input>)> {
         None
     }
 }
@@ -2192,14 +2040,13 @@ impl<'a, F: BrokenLinkCallback<'a>> Iterator for OffsetIter<'a, F> {
                 Some((Event::End(tag_end), span))
             }
             Some(cur_ix) => {
-                let cur_ix =
-                    if matches!(self.inner.tree[cur_ix].item.body, ItemBody::TightParagraph) {
-                        // tight paragraphs emit nothing
-                        self.inner.tree.push();
-                        self.inner.tree.cur().unwrap()
-                    } else {
-                        cur_ix
-                    };
+                let cur_ix = if matches!(self.inner.tree[cur_ix].item.body, ItemBody::TightParagraph) {
+                    // tight paragraphs emit nothing
+                    self.inner.tree.push();
+                    self.inner.tree.cur().unwrap()
+                } else {
+                    cur_ix
+                };
                 if self.inner.tree[cur_ix].item.body.is_maybe_inline() {
                     self.inner.handle_inline();
                 }
@@ -2263,10 +2110,9 @@ fn item_to_event<'a>(item: Item, text: &'a str, allocs: &mut Allocations<'a>) ->
         ItemBody::OwnedInlineHtml(cow_ix) => return Event::InlineHtml(allocs.take_cow(cow_ix)),
         ItemBody::SoftBreak => return Event::SoftBreak,
         ItemBody::HardBreak(_) => return Event::HardBreak,
-        ItemBody::FootnoteReference(cow_ix) => {
-            return Event::FootnoteReference(allocs.take_cow(cow_ix))
-        }
+        ItemBody::FootnoteReference(cow_ix) => return Event::FootnoteReference(allocs.take_cow(cow_ix)),
         ItemBody::TaskListMarker(checked) => return Event::TaskListMarker(checked),
+        ItemBody::ExtendedTaskListMarker(ch) => return Event::ExtendedTaskListMarker(ch),
         ItemBody::Rule => return Event::Rule,
         ItemBody::Paragraph => Tag::Paragraph,
         ItemBody::Emphasis => Tag::Emphasis,
@@ -2307,9 +2153,7 @@ fn item_to_event<'a>(item: Item, text: &'a str, allocs: &mut Allocations<'a>) ->
             classes: Vec::new(),
             attrs: Vec::new(),
         },
-        ItemBody::FencedCodeBlock(cow_ix) => {
-            Tag::CodeBlock(CodeBlockKind::Fenced(allocs.take_cow(cow_ix)))
-        }
+        ItemBody::FencedCodeBlock(cow_ix) => Tag::CodeBlock(CodeBlockKind::Fenced(allocs.take_cow(cow_ix))),
         ItemBody::IndentCodeBlock => Tag::CodeBlock(CodeBlockKind::Indented),
         ItemBody::BlockQuote(kind) => Tag::BlockQuote(kind),
         ItemBody::List(_, c, listitem_start) => {
@@ -2516,21 +2360,20 @@ mod test {
 
     #[test]
     fn reference_link_offsets() {
-        let range =
-            Parser::new("# H1\n[testing][Some reference]\n\n[Some reference]: https://github.com")
-                .into_offset_iter()
-                .filter_map(|(ev, range)| match ev {
-                    Event::Start(
-                        Tag::Link {
-                            link_type: LinkType::Reference,
-                            ..
-                        },
-                        ..,
-                    ) => Some(range),
-                    _ => None,
-                })
-                .next()
-                .unwrap();
+        let range = Parser::new("# H1\n[testing][Some reference]\n\n[Some reference]: https://github.com")
+            .into_offset_iter()
+            .filter_map(|(ev, range)| match ev {
+                Event::Start(
+                    Tag::Link {
+                        link_type: LinkType::Reference,
+                        ..
+                    },
+                    ..,
+                ) => Some(range),
+                _ => None,
+            })
+            .next()
+            .unwrap();
         assert_eq!(5..30, range);
     }
 
@@ -2562,9 +2405,7 @@ mod test {
             .next()
             .unwrap();
         assert_eq!(13..17, range);
-        if let (Event::Text(exclamation), range_exclamation) =
-            immediately_before_footnote.as_ref().unwrap()
-        {
+        if let (Event::Text(exclamation), range_exclamation) = immediately_before_footnote.as_ref().unwrap() {
             assert_eq!("!", &exclamation[..]);
             assert_eq!(&(12..13), range_exclamation);
         } else {
@@ -2596,10 +2437,7 @@ mod test {
             .nth(4)
             .unwrap();
         let expected_offset_start = "a|b|c\n--|--|--\na|".len();
-        assert_eq!(
-            expected_offset_start..(expected_offset_start + 2),
-            event_offset
-        );
+        assert_eq!(expected_offset_start..(expected_offset_start + 2), event_offset);
     }
 
     #[test]
@@ -2690,8 +2528,7 @@ mod test {
                 times_called += 1;
                 None
             };
-            let parser =
-                Parser::new_with_broken_link_callback(markdown, Options::empty(), Some(callback));
+            let parser = Parser::new_with_broken_link_callback(markdown, Options::empty(), Some(callback));
             for _ in parser {}
             assert_eq!(times_called, expected);
         }
@@ -2707,8 +2544,7 @@ mod test {
             let title = "SWAG".to_owned().into();
             Some((url, title))
         };
-        let parser =
-            Parser::new_with_broken_link_callback(test_str, Options::empty(), Some(&mut callback));
+        let parser = Parser::new_with_broken_link_callback(test_str, Options::empty(), Some(&mut callback));
         let mut link_tag_count = 0;
         for (typ, url, title, id) in parser.filter_map(|event| match event {
             Event::Start(tag) => match tag {
@@ -2798,11 +2634,7 @@ text
             Some(("#".into(), link.reference))
         }
 
-        for _ in Parser::new_with_broken_link_callback(
-            "static lifetime",
-            Options::empty(),
-            Some(&mut closure),
-        ) {}
+        for _ in Parser::new_with_broken_link_callback("static lifetime", Options::empty(), Some(&mut closure)) {}
         /* This fails to compile. Because the closure can't say `for <'a> fn(BrokenLink<'a>) ->
          * CowStr<'a>` and has to use the enclosing `'b` lifetime parameter, `temporary_str` lives
          * shorter than `'b`. I think this is unlikely to occur in real life, and if it does, the
@@ -2811,16 +2643,8 @@ text
         //for _ in Parser::new_with_broken_link_callback(&temporary_str, Options::empty(), Some(&mut callback)) {
         //}
 
-        for _ in Parser::new_with_broken_link_callback(
-            "static lifetime",
-            Options::empty(),
-            Some(&mut function),
-        ) {}
-        for _ in Parser::new_with_broken_link_callback(
-            &temporary_str,
-            Options::empty(),
-            Some(&mut function),
-        ) {}
+        for _ in Parser::new_with_broken_link_callback("static lifetime", Options::empty(), Some(&mut function)) {}
+        for _ in Parser::new_with_broken_link_callback(&temporary_str, Options::empty(), Some(&mut function)) {}
     }
 
     #[test]

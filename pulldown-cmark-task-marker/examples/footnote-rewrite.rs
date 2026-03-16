@@ -15,38 +15,40 @@ fn main() {
     let mut in_footnote = Vec::new();
     let mut footnote_numbers = HashMap::new();
     // ENABLE_FOOTNOTES is used in this example, but ENABLE_OLD_FOOTNOTES would work, too.
-    let parser = Parser::new_ext(markdown_input, Options::ENABLE_FOOTNOTES)
-        .filter_map(|event| {
-            match event {
-                Event::Start(Tag::FootnoteDefinition(_)) => {
-                    in_footnote.push(vec![event]);
-                    None
-                }
-                Event::End(TagEnd::FootnoteDefinition) => {
-                    let mut f = in_footnote.pop().unwrap();
-                    f.push(event);
-                    footnotes.push(f);
-                    None
-                }
-                Event::FootnoteReference(name) => {
-                    let n = footnote_numbers.len() + 1;
-                    let (n, nr) = footnote_numbers.entry(name.clone()).or_insert((n, 0usize));
-                    *nr += 1;
-                    let html = Event::Html(format!(r##"<sup class="footnote-reference" id="fr-{name}-{nr}"><a href="#fn-{name}">[{n}]</a></sup>"##).into());
-                    if in_footnote.is_empty() {
-                        Some(html)
-                    } else {
-                        in_footnote.last_mut().unwrap().push(html);
-                        None
-                    }
-                }
-                _ if !in_footnote.is_empty() => {
-                    in_footnote.last_mut().unwrap().push(event);
-                    None
-                }
-                _ => Some(event),
+    let parser = Parser::new_ext(markdown_input, Options::ENABLE_FOOTNOTES).filter_map(|event| match event {
+        Event::Start(Tag::FootnoteDefinition(_)) => {
+            in_footnote.push(vec![event]);
+            None
+        }
+        Event::End(TagEnd::FootnoteDefinition) => {
+            let mut f = in_footnote.pop().unwrap();
+            f.push(event);
+            footnotes.push(f);
+            None
+        }
+        Event::FootnoteReference(name) => {
+            let n = footnote_numbers.len() + 1;
+            let (n, nr) = footnote_numbers.entry(name.clone()).or_insert((n, 0usize));
+            *nr += 1;
+            let html = Event::Html(
+                format!(
+                    r##"<sup class="footnote-reference" id="fr-{name}-{nr}"><a href="#fn-{name}">[{n}]</a></sup>"##
+                )
+                .into(),
+            );
+            if in_footnote.is_empty() {
+                Some(html)
+            } else {
+                in_footnote.last_mut().unwrap().push(html);
+                None
             }
-        });
+        }
+        _ if !in_footnote.is_empty() => {
+            in_footnote.last_mut().unwrap().push(event);
+            None
+        }
+        _ => Some(event),
+    });
 
     // Write to anything implementing the `Write` trait. This could also be a file
     // or network socket.
@@ -74,20 +76,14 @@ fn main() {
     //     </ol>
     if !footnotes.is_empty() {
         footnotes.retain(|f| match f.first() {
-            Some(Event::Start(Tag::FootnoteDefinition(name))) => {
-                footnote_numbers.get(name).unwrap_or(&(0, 0)).1 != 0
-            }
+            Some(Event::Start(Tag::FootnoteDefinition(name))) => footnote_numbers.get(name).unwrap_or(&(0, 0)).1 != 0,
             _ => false,
         });
         footnotes.sort_by_cached_key(|f| match f.first() {
-            Some(Event::Start(Tag::FootnoteDefinition(name))) => {
-                footnote_numbers.get(name).unwrap_or(&(0, 0)).0
-            }
+            Some(Event::Start(Tag::FootnoteDefinition(name))) => footnote_numbers.get(name).unwrap_or(&(0, 0)).0,
             _ => unreachable!(),
         });
-        handle
-            .write_all(b"<hr><ol class=\"footnotes-list\">\n")
-            .unwrap();
+        handle.write_all(b"<hr><ol class=\"footnotes-list\">\n").unwrap();
         html::write_html_io(
             &mut handle,
             footnotes.into_iter().flat_map(|fl| {
@@ -140,11 +136,9 @@ fn main() {
                         );
                         for usage in 1..=usage_count {
                             if usage == 1 {
-                                write!(&mut end, r##" <a href="#fr-{name}-{usage}">↩</a>"##)
-                                    .unwrap();
+                                write!(&mut end, r##" <a href="#fr-{name}-{usage}">↩</a>"##).unwrap();
                             } else {
-                                write!(&mut end, r##" <a href="#fr-{name}-{usage}">↩{usage}</a>"##)
-                                    .unwrap();
+                                write!(&mut end, r##" <a href="#fr-{name}-{usage}">↩{usage}</a>"##).unwrap();
                             }
                         }
                         has_written_backrefs = true;

@@ -25,9 +25,7 @@ use std::collections::HashMap;
 use crate::strings::CowStr;
 use crate::Event::*;
 use crate::{Alignment, BlockQuoteKind, CodeBlockKind, Event, LinkType, Tag, TagEnd};
-use pulldown_cmark_escape::{
-    escape_href, escape_html, escape_html_body_text, FmtWriter, IoWriter, StrWrite,
-};
+use pulldown_cmark_escape::{escape_href, escape_html, escape_html_body_text, FmtWriter, IoWriter, StrWrite};
 
 enum TableState {
     Head,
@@ -144,7 +142,7 @@ where
                     write!(&mut self.writer, "{}", number)?;
                     self.write("</a></sup>")?;
                 }
-                TaskListMarker(true) => {
+                TaskListMarker(true) | ExtendedTaskListMarker(_) => {
                     self.write("<input disabled=\"\" type=\"checkbox\" checked=\"\"/>\n")?;
                 }
                 TaskListMarker(false) => {
@@ -512,6 +510,7 @@ where
                     let number = *self.numbers.entry(name).or_insert(len);
                     write!(&mut self.writer, "[{}]", number)?;
                 }
+                ExtendedTaskListMarker(ch) => write!(self.writer, "[{}]", ch)?,
                 TaskListMarker(true) => self.write("[x]")?,
                 TaskListMarker(false) => self.write("[ ]")?,
             }

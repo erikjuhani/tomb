@@ -75,31 +75,15 @@ pub fn main() -> std::io::Result<()> {
     opts.optflag("T", "enable-tables", "enable GitHub-style tables");
     opts.optflag("m", "enable-math", "enable LaTeX-style math");
     opts.optflag("F", "enable-footnotes", "enable GitHub-style footnotes");
-    opts.optflag(
-        "f",
-        "enable-old-footnotes",
-        "enable Hoedown-style footnotes",
-    );
-    opts.optflag(
-        "S",
-        "enable-strikethrough",
-        "enable GitHub-style strikethrough",
-    );
+    opts.optflag("f", "enable-old-footnotes", "enable Hoedown-style footnotes");
+    opts.optflag("S", "enable-strikethrough", "enable GitHub-style strikethrough");
     opts.optflag("U", "enable-superscript", "enable superscript");
     opts.optflag("B", "enable-subscript", "enable subscript");
     opts.optflag("L", "enable-tasklists", "enable GitHub-style task lists");
     opts.optflag("P", "enable-smart-punctuation", "enable smart punctuation");
-    opts.optflag(
-        "H",
-        "enable-heading-attributes",
-        "enable heading attributes",
-    );
+    opts.optflag("H", "enable-heading-attributes", "enable heading attributes");
     opts.optflag("M", "enable-metadata-blocks", "enable metadata blocks");
-    opts.optflag(
-        "R",
-        "reject-broken-links",
-        "fail if input file has broken links",
-    );
+    opts.optflag("R", "reject-broken-links", "fail if input file has broken links");
     opts.optflag("G", "enable-gfm", "enable misc GFM features");
     opts.optflag(
         "D",

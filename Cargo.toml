@@ -1,6 +1,6 @@
 [workspace]
 resolver = "3"
-members = ["tomb-cli"]
+members = ["tomb-cli", "pulldown-cmark-task-marker"]
 
 [profile.ci]
 inherits = "dev"

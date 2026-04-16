@@ -4,6 +4,8 @@ use thiserror::Error;
 pub enum TombError {
     #[error("I/O error: {0}")]
     Io(#[from] std::io::Error),
+    #[error("Config error: {0}")]
+    Config(String),
 }
 
 pub type Result<T> = std::result::Result<T, TombError>;

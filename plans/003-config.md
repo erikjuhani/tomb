@@ -6,23 +6,23 @@ Prerequisite: 001-cargo-root.md (error types and model types exist)
 
 ## 1. Module scaffolding
 
-- [ ] Create `tomb-cli/src/config.rs`
-- [ ] Add `pub mod config;` to `lib.rs`
-- [ ] Add `Config` error variant to `TombError` if needed
-- [ ] Verify: `cargo check -p tomb-cli`
+- [x] Create `tomb-cli/src/config.rs`
+- [x] Add `pub mod config;` to `lib.rs`
+- [x] Add `Config` error variant to `TombError` if needed
+- [x] Verify: `cargo check -p tomb-cli`
 
 ## 2. Config data model
 
-- [ ] `FileEntry` struct: `path: Option<PathBuf>`, `glob: Option<String>`, `context: Option<String>`
-- [ ] `InboxEntry` struct: `path: PathBuf`
-- [ ] `Config` struct: `files: Vec<FileEntry>`, `inbox: Vec<InboxEntry>`, `root_dir: PathBuf` (directory containing the config file)
-- [ ] Derive `serde::Deserialize` on all config structs
+- [x] `FileEntry` enum: `Path { path, context }` / `Glob { glob, context }` (serde untagged)
+- [x] `InboxEntry` struct: `path: PathBuf`
+- [x] `Config` struct: `files: Vec<FileEntry>`, `inbox: Vec<InboxEntry>`, `root_dir: PathBuf` (directory containing the config file)
+- [x] Derive `serde::Deserialize` on all config structs
 
 ## 3. Config file discovery — `Config::resolve(start_dir)`
 
-- [ ] Walk up from `start_dir` looking for `.tomb.toml`
-- [ ] If found, parse it and set `root_dir` to its parent
-- [ ] If not found, fall back to `~/.config/tomb/config.toml` (use `etcetera::choose_base_strategy()` / `config_dir()`)
+- [x] Walk up from `start_dir` looking for `.tomb.toml`
+- [x] If found, parse it and set `root_dir` to its parent
+- [x] If not found, fall back to `~/.config/tomb/config.toml` (use `etcetera::choose_base_strategy()` / `config_dir()`)
 - [ ] If neither exists, return a default empty config
 - [ ] Return `TombError::Config` on parse failures
 
@@ -39,10 +39,11 @@ Prerequisite: 001-cargo-root.md (error types and model types exist)
 - [ ] Dedup by canonical path — explicit entries win over glob matches
 - [ ] Context resolution order: explicit config > frontmatter (deferred to caller) > parent dir name
 
-## 6. Inbox resolution — `Config::nearest_inbox(start_dir)`
+## 6. Inbox resolution — `Config::inbox()`
 
-- [ ] Return the inbox file closest to `start_dir` (per-repo inbox if inside a repo, otherwise first global inbox)
+- [ ] Return the first inbox entry from the config
 - [ ] Return `None` if no inboxes configured
+- [ ] Future: support multiple inboxes with interactive selection and `--inbox` flag
 
 ## 7. Tests
 
@@ -53,7 +54,7 @@ Prerequisite: 001-cargo-root.md (error types and model types exist)
 - [ ] Relative paths resolve against config file location
 - [ ] Glob expansion picks up matching files
 - [ ] Dedup: explicit entry wins over glob match for same file
-- [ ] `nearest_inbox` returns per-repo inbox when inside repo
+- [ ] `inbox()` returns first configured inbox
 
 ## Verify
 

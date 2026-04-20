@@ -8,24 +8,24 @@ This is the most critical module. It must handle all the markdown constructs in 
 
 ## 1. Module scaffolding
 
-- [ ] Create `tomb-cli/src/parser.rs`
-- [ ] Add `pub mod parser;` to `lib.rs`
-- [ ] Add `Parse` and `UnsupportedVersion` error variants to `TombError`
-- [ ] Verify: `cargo check -p tomb-cli`
+- [x] Create `tomb-cli/src/parser.rs`
+- [x] Add `pub mod parser;` to `lib.rs`
+- [x] Add `Parse` and `UnsupportedVersion` error variants to `TombError`
+- [x] Verify: `cargo check -p tomb-cli`
 
 ## 2. Parser function signature
 
-- [ ] `pub fn parse_managed_file(input: &str) -> Result<ManagedFile>`
+- [x] `pub fn parse_managed_file(input: &str) -> Result<ManagedFile>`
 - [ ] Enable pulldown-cmark options: `ENABLE_TASKLISTS | ENABLE_EXTENDED_TASK_MARKERS | ENABLE_YAML_STYLE_METADATA_BLOCKS`
 - [ ] Use `into_offset_iter()` to get `(Event, Range<usize>)` pairs
 
 ## 3. Frontmatter extraction
 
-- [ ] Match `Event::Start(Tag::MetadataBlock(MetadataBlockKind::YamlStyle))` → collect text → `Event::End`
-- [ ] Parse YAML text for tomb fields: `tomb_mode`, `tomb_version`, `context`, `last_rollover`
-- [ ] Simple key-value parsing (no need for a full YAML library — these are flat fields)
-- [ ] Map to `Frontmatter` struct
-- [ ] Handle missing frontmatter gracefully (return default `Frontmatter`)
+- [x] Match `Event::Start(Tag::MetadataBlock(MetadataBlockKind::YamlStyle))` → collect text → `Event::End`
+- [x] Parse YAML text for tomb fields: `tomb_mode`, `tomb_version`, `context`, `last_rollover`
+- [x] Simple key-value parsing (no need for a full YAML library — these are flat fields)
+- [x] Map to `Frontmatter` struct
+- [x] Handle missing frontmatter gracefully (return default `Frontmatter`)
 
 ## 4. Section detection
 

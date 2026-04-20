@@ -6,6 +6,10 @@ pub enum TombError {
     Io(#[from] std::io::Error),
     #[error("Config error: {0}")]
     Config(String),
+    #[error("Parse error: {0}")]
+    Parse(String),
+    #[error("Unsupported version: {0}")]
+    UnsupportedVersion(String),
 }
 
 pub type Result<T> = std::result::Result<T, TombError>;

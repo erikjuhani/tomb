@@ -39,18 +39,18 @@ pub enum FileMode {
     Tracked,
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Default)]
 pub struct Frontmatter {
-    mode: Option<FileMode>,
-    version: Option<u8>,
-    context: Option<String>,
-    last_rollover: Option<NaiveDate>,
+    pub mode: Option<FileMode>,
+    pub version: Option<u8>,
+    pub context: Option<String>,
+    pub last_rollover: Option<NaiveDate>,
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Default)]
 pub struct ManagedFile {
-    frontmatter: Frontmatter,
-    sections: Vec<Section>,
+    pub frontmatter: Frontmatter,
+    pub sections: Vec<Section>,
     // TODO: Rope?
-    source: String,
+    pub source: String,
 }

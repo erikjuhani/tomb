@@ -3,7 +3,7 @@ use std::ops::Range;
 use chrono::NaiveDate;
 
 #[derive(Debug, Clone, PartialEq)]
-pub enum TaskMarker {
+pub enum TaskStatus {
     Todo,
     InProgress,
     Done,
@@ -11,13 +11,20 @@ pub enum TaskMarker {
 }
 
 #[derive(Debug, Clone, PartialEq)]
+pub struct TaskLink {
+    pub label: String,
+    pub url: String,
+}
+
+#[derive(Debug, Clone, PartialEq)]
 pub struct Task {
-    id: Option<String>,
-    title: String,
-    marker: TaskMarker,
-    description: Vec<String>,
-    children: Vec<Task>,
-    source_range: Option<Range<usize>>,
+    pub id: Option<String>,
+    pub title: String,
+    pub link: Option<TaskLink>,
+    pub status: TaskStatus,
+    pub description: String,
+    pub children: Vec<Task>,
+    pub source_range: Range<usize>,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -29,8 +36,8 @@ pub enum SectionKind {
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Section {
-    kind: SectionKind,
-    tasks: Vec<Task>,
+    pub kind: SectionKind,
+    pub tasks: Vec<Task>,
 }
 
 #[derive(Debug, Clone, PartialEq)]

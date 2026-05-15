@@ -18,6 +18,7 @@ pulldown-cmark = { path = "../pulldown-cmark-task-marker", version = "0.13.1", d
 rand = "0.10.0"
 ratatui = "0.30.0"
 serde = { version = "1.0.228", features = ["derive"] }
+similar-asserts = "2.0.0"
 thiserror = "2.0.18"
 toml = "1.0.6"
 

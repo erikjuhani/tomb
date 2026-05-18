@@ -6,13 +6,13 @@ Prerequisite: 001-cargo-root.md (model types), 004-parser.md (parser exists for 
 
 ## 1. Module scaffolding
 
-- [ ] Create `tomb-cli/src/renderer.rs`
-- [ ] Add `pub mod renderer;` to `lib.rs`
-- [ ] Verify: `cargo check -p tomb-cli`
+- [x] Create `tomb-cli/src/renderer.rs`
+- [x] Add `pub mod renderer;` to `lib.rs`
+- [x] Verify: `cargo check -p tomb-cli`
 
 ## 2. Render function
 
-- [ ] `pub fn render_managed_file(file: &ManagedFile) -> String`
+- [x] `pub fn render_managed_file(file: &ManagedFile) -> String`
 - [ ] Build output string by walking the `ManagedFile` structure
 
 ## 3. Frontmatter rendering

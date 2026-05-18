@@ -1,3 +1,4 @@
+use std::collections::BTreeMap;
 use std::ops::Range;
 
 use chrono::NaiveDate;
@@ -52,6 +53,7 @@ pub struct Frontmatter {
     pub version: Option<u8>,
     pub context: Option<String>,
     pub last_rollover: Option<NaiveDate>,
+    pub extras: BTreeMap<String, String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Default)]
@@ -60,4 +62,17 @@ pub struct ManagedFile {
     pub sections: Vec<Section>,
     // TODO: Rope?
     pub source: String,
+}
+
+impl ManagedFile {
+    pub fn mode(&self) -> FileMode {
+        if let Some(mode) = &self.frontmatter.mode {
+            return mode.clone();
+        }
+        if self.sections.is_empty() {
+            FileMode::Tracked
+        } else {
+            FileMode::Managed
+        }
+    }
 }

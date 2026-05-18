@@ -9,6 +9,10 @@ use crate::{
     task_parser::TaskParser,
 };
 
+pub fn parse_managed_file(input: &str) -> Result<ManagedFile> {
+    Parser::new(input).run()
+}
+
 struct Parser<'a, I> {
     iter: I,
     source: &'a str,
@@ -64,14 +68,6 @@ impl<'a> Parser<'a, CmarkIter<'a>> {
             }
         }
         self.finish_section();
-
-        if self.frontmatter.mode.is_none() {
-            self.frontmatter.mode = Some(if self.sections.is_empty() {
-                FileMode::Tracked
-            } else {
-                FileMode::Managed
-            });
-        }
 
         Ok(ManagedFile {
             frontmatter: self.frontmatter,
@@ -146,7 +142,9 @@ impl<'a> Parser<'a, CmarkIter<'a>> {
                 "tomb_version" => self.frontmatter.version = value.parse().ok(),
                 "context" => self.frontmatter.context = Some(value.to_string()),
                 "last_rollover" => self.frontmatter.last_rollover = value.parse().ok(),
-                _ => {}
+                other => {
+                    self.frontmatter.extras.insert(other.to_string(), value.to_string());
+                }
             };
         }
     }
@@ -154,7 +152,7 @@ impl<'a> Parser<'a, CmarkIter<'a>> {
 
 #[cfg(test)]
 mod tests {
-    use std::{result, str::FromStr};
+    use std::{collections::BTreeMap, result, str::FromStr};
 
     use indoc::indoc;
     use pretty_assertions::assert_eq;
@@ -225,7 +223,8 @@ mod tests {
                 mode: Some(FileMode::Managed),
                 version: Some(1),
                 context: Some(String::from("work")),
-                last_rollover: Some(NaiveDate::from_str("2026-02-25")?)
+                last_rollover: Some(NaiveDate::from_str("2026-02-25")?),
+                ..Default::default()
             }
         );
 
@@ -369,7 +368,8 @@ mod tests {
         "#};
 
         let file = Parser::new(source).run().unwrap();
-        assert_eq!(file.frontmatter.mode, Some(FileMode::Managed));
+        assert_eq!(file.frontmatter.mode, None);
+        assert_eq!(file.mode(), FileMode::Managed);
     }
 
     #[test]
@@ -380,7 +380,8 @@ mod tests {
         "#};
 
         let file = Parser::new(source).run().unwrap();
-        assert_eq!(file.frontmatter.mode, Some(FileMode::Tracked));
+        assert_eq!(file.frontmatter.mode, None);
+        assert_eq!(file.mode(), FileMode::Tracked);
     }
 
     #[test]
@@ -394,6 +395,7 @@ mod tests {
 
         let file = Parser::new(source).run().unwrap();
         assert_eq!(file.frontmatter.mode, Some(FileMode::Tracked));
+        assert_eq!(file.mode(), FileMode::Tracked);
     }
 
     fn parse(source: &str) -> crate::model::ManagedFile {
@@ -404,17 +406,30 @@ mod tests {
     fn missing_frontmatter_yields_default_fields() {
         let file = parse("Just some text, no tomb structure.\n");
 
-        // Mode is inferred (Tracked here, no sections). The other three
-        // frontmatter fields stay at their `Frontmatter::default()` value.
+        // No `tomb_mode:` was written, so the field stays `None` in the
+        // model. Effective mode comes from `file.mode()`.
+        assert_eq!(file.frontmatter, Frontmatter::default());
+        assert_eq!(file.mode(), FileMode::Tracked);
+    }
+
+    #[test]
+    fn captures_unknown_frontmatter_keys() -> result::Result<(), Box<dyn std::error::Error>> {
+        let source = indoc! { r#"---
+        tomb_mode: managed
+        custom_key: some value
+        another_one: 42
+        ---
+        "#};
+
+        let file = Parser::new(source).run()?;
         assert_eq!(
-            file.frontmatter,
-            Frontmatter {
-                mode: Some(FileMode::Tracked),
-                version: None,
-                context: None,
-                last_rollover: None,
-            }
+            file.frontmatter.extras,
+            BTreeMap::from([
+                (String::from("custom_key"), String::from("some value")),
+                (String::from("another_one"), String::from("42")),
+            ])
         );
+        Ok(())
     }
 
     #[test]

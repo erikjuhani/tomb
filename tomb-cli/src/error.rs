@@ -10,6 +10,10 @@ pub enum TombError {
     Parse(String),
     #[error("Unsupported version: {0}")]
     UnsupportedVersion(String),
+    #[error("Id not found: ${0}")]
+    IdNotFound(String),
+    #[error("Ambiguous id {prefix}: matches {}", .matches.join(", "))]
+    AmbiguousId { prefix: String, matches: Vec<String> },
 }
 
 pub type Result<T> = std::result::Result<T, TombError>;

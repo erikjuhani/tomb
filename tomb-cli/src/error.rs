@@ -12,6 +12,10 @@ pub enum TombError {
     UnsupportedVersion(String),
     #[error("Id not found: ${0}")]
     IdNotFound(String),
+    #[error("File not managed: ${0}")]
+    NotManaged(String),
+    #[error("Conflict: ${0}")]
+    Conflict(String),
     #[error("Ambiguous id {prefix}: matches {}", .matches.join(", "))]
     AmbiguousId { prefix: String, matches: Vec<String> },
 }

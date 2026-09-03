@@ -2,6 +2,7 @@ pub mod cli;
 pub mod config;
 pub mod error;
 pub(crate) mod id;
+pub mod io;
 pub mod model;
 pub mod parser;
 pub(crate) mod renderer;

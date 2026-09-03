@@ -1,9 +1,11 @@
-use std::{collections::HashSet, iter::repeat_with};
+use std::{collections::HashSet, iter::repeat_with, path::PathBuf};
 
-use rand::{distr::Alphanumeric, Rng, RngExt};
+use rand::{Rng, RngExt, distr::Alphanumeric};
 
 use crate::{
+    config::Config,
     error::{Result, TombError},
+    io::read_managed_file,
     model::{ManagedFile, Task},
 };
 
@@ -54,6 +56,32 @@ pub(crate) fn collect_ids(file: &ManagedFile) -> Vec<String> {
         .iter()
         .flat_map(|section| task_ids(&section.tasks))
         .collect()
+}
+
+pub(crate) fn resolve_id_across_files(prefix: &str, config: &Config) -> Result<(PathBuf, String)> {
+    let managed_files = config
+        .resolve_files()
+        .iter()
+        .flat_map(|resolved_file| {
+            read_managed_file(&resolved_file.path).map(|(managed_file, _)| (resolved_file.path.clone(), managed_file))
+        })
+        .collect::<Vec<_>>();
+
+    let entries: Vec<(PathBuf, String)> = managed_files
+        .into_iter()
+        .flat_map(|(path, file)| collect_ids(&file).into_iter().map(move |id| (path.clone(), id)))
+        .collect();
+
+    let ids: Vec<&str> = entries.iter().map(|(_, id)| id.as_str()).collect();
+    let full = resolve_prefix(prefix, &ids)?;
+
+    let (path, id) = entries
+        .iter()
+        .find(|(_, id)| id == full)
+        .map(|(path, id)| (path.clone(), id.clone()))
+        .expect("resolve_prefix returns an id present in entries");
+
+    Ok((path, id))
 }
 
 pub(crate) fn assign_missing_ids(file: &mut ManagedFile) -> usize {
@@ -115,14 +143,19 @@ fn repair_tasks(tasks: &mut [Task], seen: &mut HashSet<String>) -> usize {
 
 #[cfg(test)]
 mod tests {
-    use std::collections::HashSet;
+    use std::{collections::HashSet, fs};
 
     use indoc::indoc;
-    use rand::{rngs::StdRng, SeedableRng};
+    use rand::{SeedableRng, rngs::StdRng};
+    use tempfile::tempdir;
 
     use crate::{
+        config::{Config, FileEntry},
         error::TombError,
-        id::{assign_missing_ids, collect_ids, find_duplicates, generate_id, repair_duplicates, resolve_prefix},
+        id::{
+            assign_missing_ids, collect_ids, find_duplicates, generate_id, repair_duplicates, resolve_id_across_files,
+            resolve_prefix,
+        },
         parser::parse_managed_file,
     };
 
@@ -271,5 +304,64 @@ mod tests {
             ids.len(),
             "all ids now unique",
         );
+    }
+
+    #[test]
+    fn resolves_id_across_multiple_files() -> Result<(), Box<dyn std::error::Error>> {
+        let dir = tempdir()?;
+        let path_a = dir.path().join("a.md");
+        let path_b = dir.path().join("b.md");
+        fs::write(&path_a, "## Today\n\n- [ ] Alpha ^a1b2\n")?;
+        fs::write(&path_b, "## Today\n\n- [ ] Beta ^b3c4\n")?;
+
+        let config = Config {
+            files: vec![
+                FileEntry::Path {
+                    path: path_b.clone(),
+                    context: None,
+                },
+                FileEntry::Path {
+                    path: path_a.clone(),
+                    context: None,
+                },
+            ],
+            inbox: vec![],
+            root_dir: None,
+        };
+
+        let (path, id) = resolve_id_across_files("a1", &config)?;
+
+        assert_eq!(path, path_a);
+        assert_eq!(id, "a1b2");
+        Ok(())
+    }
+
+    #[test]
+    fn ambiguous_id_across_files_reports_matches() -> Result<(), Box<dyn std::error::Error>> {
+        let dir = tempdir()?;
+        let path_a = dir.path().join("a.md");
+        let path_b = dir.path().join("b.md");
+        fs::write(&path_a, "## Today\n\n- [ ] Alpha ^a1b2\n")?;
+        fs::write(&path_b, "## Today\n\n- [ ] Also ^a1c3\n")?;
+
+        let config = Config {
+            files: vec![
+                FileEntry::Path {
+                    path: path_a,
+                    context: None,
+                },
+                FileEntry::Path {
+                    path: path_b,
+                    context: None,
+                },
+            ],
+            inbox: vec![],
+            root_dir: None,
+        };
+
+        let err = resolve_id_across_files("a1", &config).unwrap_err();
+
+        assert!(matches!(err, TombError::AmbiguousId { .. }));
+        Ok(())
     }
 }
